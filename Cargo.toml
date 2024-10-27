@@ -1,10 +1,12 @@
 [package]
-name = "chaos-the-game"
+name = "a-rust-game"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rand = "0.8.5"
 sdl2 = { version = "0.37.0", features = ["gfx", "static-link", "use-vcpkg"] }
+strum = { version = "0.26.3", features = ["derive"] }
 
 [package.metadata.vcpkg]
 dependencies = ["sdl2", "sdl2-gfx"]
