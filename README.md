@@ -1,4 +1,4 @@
-# teeko-rust
+# chaos-the-game
 
 ## Development
 

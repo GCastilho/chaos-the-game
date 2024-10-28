@@ -8,7 +8,7 @@ use sdl2::video::Window;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::keyboard::{Action, KeyState};
+use crate::keyboard::{Action, InputController, InputEvent, KeyState};
 
 #[derive(Debug, strum::Display, Clone, Copy, Hash, PartialEq, Eq)]
 enum Piece {
@@ -51,25 +51,6 @@ struct ScreenPos {
     y: i32,
 }
 
-#[derive(Clone, Copy)]
-struct KeyboardState {
-    up: KeyState,
-    down: KeyState,
-    left: KeyState,
-    right: KeyState,
-}
-
-impl Default for KeyboardState {
-    fn default() -> Self {
-        Self {
-            up: KeyState::Up,
-            down: KeyState::Up,
-            left: KeyState::Up,
-            right: KeyState::Up,
-        }
-    }
-}
-
 #[derive(Default, Debug)]
 pub struct MovableEntity {
     position: [i32; 2],
@@ -86,9 +67,8 @@ pub struct Game {
     current_player: Piece,
     pieces_dropped: HashMap<Piece, usize>,
     screen_pos: ScreenPos,
-    current_keyboard_state: KeyboardState,
-    previous_keyboard_state: KeyboardState,
     player: MovableEntity,
+    input_controller: InputController,
 }
 
 impl Game {
@@ -97,18 +77,16 @@ impl Game {
         let current_player = Piece::Red;
         let pieces_dropped = HashMap::new();
         let screen_pos = ScreenPos { x: 0, y: 0 };
-        let current_keyboard_state = KeyboardState::default();
-        let previous_keyboard_state = KeyboardState::default();
         let player = MovableEntity::default();
+        let input_controller = InputController::new();
         Game {
             area,
             pieces,
             current_player,
             pieces_dropped,
             screen_pos,
-            current_keyboard_state,
-            previous_keyboard_state,
             player,
+            input_controller,
         }
     }
 
@@ -143,13 +121,8 @@ impl Game {
         self.next_turn();
     }
 
-    pub fn handle_keypress(&mut self, movement: Action, keystate: KeyState) {
-        match movement {
-            Action::Up => self.current_keyboard_state.up = keystate,
-            Action::Down => self.current_keyboard_state.down = keystate,
-            Action::Left => self.current_keyboard_state.left = keystate,
-            Action::Right => self.current_keyboard_state.right = keystate,
-        }
+    pub fn handle_keypress(&mut self, input_event: InputEvent) {
+        self.input_controller.handle_input_event(input_event);
     }
 
     fn next_turn(&mut self) {
@@ -167,37 +140,39 @@ impl Game {
     pub fn update(&mut self) {
         //main game logic here
 
-        if KeyState::Down == self.current_keyboard_state.left {
+        if self.input_controller.state[Action::Left] == KeyState::Down {
             if self.player.velocity[0] >= -PLAYER_MAX_VERTICAL_SPEED {
                 self.player.velocity[0] -= PLAYER_VERTICAL_ACELERATION;
             }
-        } else if KeyState::Down == self.current_keyboard_state.right
+        } else if self.input_controller.state[Action::Right] == KeyState::Down
             && self.player.velocity[0] <= PLAYER_MAX_VERTICAL_SPEED
         {
             self.player.velocity[0] += PLAYER_VERTICAL_ACELERATION;
         }
 
-        if KeyState::Up == self.current_keyboard_state.left
-            && KeyState::Down == self.previous_keyboard_state.left
+        if self
+            .input_controller
+            .last_event
+            .is(Action::Left, KeyState::Up)
         {
             self.player.velocity[0] = 0;
-        } else if KeyState::Up == self.current_keyboard_state.right
-            && KeyState::Down == self.previous_keyboard_state.right
+        } else if self
+            .input_controller
+            .last_event
+            .is(Action::Right, KeyState::Up)
         {
             self.player.velocity[0] = 0;
         }
 
-        if let KeyState::Down = self.current_keyboard_state.down {
+        if self.input_controller.state[Action::Down] == KeyState::Down {
             self.screen_pos.y -= 10
-        } else if let KeyState::Down = self.current_keyboard_state.up {
+        } else if self.input_controller.state[Action::Up] == KeyState::Down {
             self.screen_pos.y += 10
         }
 
         // if self.player.position[1] > 500 {}
         self.player.position[0] += self.player.velocity[0];
         self.player.position[1] += self.player.velocity[1];
-
-        self.previous_keyboard_state = self.current_keyboard_state;
     }
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {

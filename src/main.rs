@@ -2,7 +2,7 @@ mod game;
 mod keyboard;
 
 use crate::game::Game;
-use keyboard::parse_keyboard_event;
+use keyboard::InputEvent;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -53,9 +53,9 @@ fn main() -> Result<(), String> {
                     game.handle_click(x as usize, y as usize);
                 }
                 Event::KeyDown { .. } | Event::KeyUp { .. } => {
-                    if let Some((action, keystate)) = parse_keyboard_event(event) {
-                        println!("Action: {:?} KeyState: {:?}", action, keystate);
-                        game.handle_keypress(action, keystate);
+                    if let Ok(input_event) = InputEvent::try_from(event) {
+                        println!("{input_event:?}");
+                        game.handle_keypress(input_event);
                     }
                 }
                 _ => {}
