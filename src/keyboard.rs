@@ -4,9 +4,18 @@ use sdl2::keyboard::Keycode;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum KeyState {
-    Down,
     #[default]
     Up,
+    Down,
+}
+
+impl KeyState {
+    pub fn is_active(&self) -> bool {
+        match self {
+            KeyState::Down => true,
+            KeyState::Up => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, enum_map::Enum, PartialEq, Eq)]
@@ -34,8 +43,8 @@ impl TryFrom<Keycode> for Action {
 
 #[derive(Debug)]
 pub struct InputEvent {
-    pub action: Action,
-    pub key_state: KeyState,
+    action: Action,
+    key_state: KeyState,
 }
 
 impl InputEvent {
@@ -71,8 +80,8 @@ impl TryFrom<Event> for InputEvent {
 }
 
 pub struct InputController {
-    pub state: EnumMap<Action, KeyState>,
-    pub last_event: InputEvent, // Todo: Faz mais sentido ser um VecDupe/Option
+    pub state: EnumMap<Action, KeyState>, // todo: n faz mais sentido ser bool? Se sim, InputController talvez n seja o melhor nome
+    pub last: InputEvent,                 // Todo: Faz mais sentido ser um VecDupe/Option
 }
 
 impl InputController {
@@ -83,12 +92,12 @@ impl InputController {
         };
         Self {
             state: EnumMap::default(),
-            last_event: dummy_event,
+            last: dummy_event,
         }
     }
 
     pub fn handle_input_event(&mut self, input_event: InputEvent) {
         self.state[input_event.action] = input_event.key_state;
-        self.last_event = input_event;
+        self.last = input_event;
     }
 }

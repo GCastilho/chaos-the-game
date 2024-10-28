@@ -1,6 +1,7 @@
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use rand::Rng;
+use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Canvas;
@@ -68,7 +69,7 @@ pub struct Game {
     pieces_dropped: HashMap<Piece, usize>,
     screen_pos: ScreenPos,
     player: MovableEntity,
-    input_controller: InputController,
+    inputs: InputController,
 }
 
 impl Game {
@@ -86,7 +87,7 @@ impl Game {
             pieces_dropped,
             screen_pos,
             player,
-            input_controller,
+            inputs: input_controller,
         }
     }
 
@@ -122,7 +123,7 @@ impl Game {
     }
 
     pub fn handle_keypress(&mut self, input_event: InputEvent) {
-        self.input_controller.handle_input_event(input_event);
+        self.inputs.handle_input_event(input_event);
     }
 
     fn next_turn(&mut self) {
@@ -140,33 +141,25 @@ impl Game {
     pub fn update(&mut self) {
         //main game logic here
 
-        if self.input_controller.state[Action::Left] == KeyState::Down {
+        if self.inputs.state[Action::Left].is_active() {
             if self.player.velocity[0] >= -PLAYER_MAX_VERTICAL_SPEED {
                 self.player.velocity[0] -= PLAYER_VERTICAL_ACELERATION;
             }
-        } else if self.input_controller.state[Action::Right] == KeyState::Down
+        } else if self.inputs.state[Action::Right].is_active()
             && self.player.velocity[0] <= PLAYER_MAX_VERTICAL_SPEED
         {
             self.player.velocity[0] += PLAYER_VERTICAL_ACELERATION;
         }
 
-        if self
-            .input_controller
-            .last_event
-            .is(Action::Left, KeyState::Up)
-        {
+        if self.inputs.last.is(Action::Left, KeyState::Up) {
             self.player.velocity[0] = 0;
-        } else if self
-            .input_controller
-            .last_event
-            .is(Action::Right, KeyState::Up)
-        {
+        } else if self.inputs.last.is(Action::Right, KeyState::Up) {
             self.player.velocity[0] = 0;
         }
 
-        if self.input_controller.state[Action::Down] == KeyState::Down {
+        if self.inputs.state[Action::Down].is_active() {
             self.screen_pos.y -= 10
-        } else if self.input_controller.state[Action::Up] == KeyState::Down {
+        } else if self.inputs.state[Action::Up].is_active() {
             self.screen_pos.y += 10
         }
 
@@ -177,7 +170,7 @@ impl Game {
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         // self.draw_lines(canvas)?;
-        self.draw_pieces(canvas)?;
+        // self.draw_pieces(canvas)?;
         self.draw_player(canvas)?;
         Ok(())
     }
@@ -205,7 +198,7 @@ impl Game {
                 canvas.set_draw_color(color);
                 let x = (width / 2) + width * column as i16;
                 let y = (height / 2) + height * line as i16;
-                // canvas.filled_circle(x, y, width / 4, color)?;
+                canvas.filled_circle(x, y, width / 4, color)?;
             }
         }
 
