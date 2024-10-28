@@ -1,6 +1,8 @@
 mod game;
+mod keyboard;
 
 use crate::game::Game;
+use keyboard::parse_keyboard_event;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -18,7 +20,8 @@ fn main() -> Result<(), String> {
 
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
-        .position_centered()
+        // .position_centered()
+        .position(2200, 100)
         .build()
         .expect("Failed to build main window");
 
@@ -35,11 +38,10 @@ fn main() -> Result<(), String> {
     let mut event_pump = sdl_context
         .event_pump()
         .expect("Failed to get SDL event pump");
-    let mut i = 0;
     'running: loop {
-        i = (i + 1) % 255;
-        canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
+        canvas.set_draw_color(Color::RGB(80, 80, 80));
         canvas.clear();
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -50,10 +52,17 @@ fn main() -> Result<(), String> {
                 Event::MouseButtonDown { x, y, .. } => {
                     game.handle_click(x as usize, y as usize);
                 }
+                Event::KeyDown { .. } | Event::KeyUp { .. } => {
+                    if let Some((action, keystate)) = parse_keyboard_event(event) {
+                        println!("Action: {:?} KeyState: {:?}", action, keystate);
+                        game.handle_keypress(action, keystate);
+                    }
+                }
                 _ => {}
             }
         }
 
+        game.update();
         game.draw(&mut canvas)?;
 
         canvas.present();

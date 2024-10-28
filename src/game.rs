@@ -1,13 +1,14 @@
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use rand::Rng;
-use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+
+use crate::keyboard::{Action, KeyState};
 
 #[derive(Debug, strum::Display, Clone, Copy, Hash, PartialEq, Eq)]
 enum Piece {
@@ -42,11 +43,52 @@ impl Distribution<Piece> for Standard {
 const ROWS: usize = 5;
 const COLS: usize = 5;
 
+const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
+const PLAYER_VERTICAL_ACELERATION: i32 = 1;
+
+struct ScreenPos {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Clone, Copy)]
+struct KeyboardState {
+    up: KeyState,
+    down: KeyState,
+    left: KeyState,
+    right: KeyState,
+}
+
+impl Default for KeyboardState {
+    fn default() -> Self {
+        Self {
+            up: KeyState::Up,
+            down: KeyState::Up,
+            left: KeyState::Up,
+            right: KeyState::Up,
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct MovableEntity {
+    position: [i32; 2],
+    velocity: [i32; 2],
+}
+
+trait Enemy {
+    fn update(&self);
+}
+
 pub struct Game {
     area: Rect,
     pieces: [[Piece; COLS]; ROWS],
     current_player: Piece,
     pieces_dropped: HashMap<Piece, usize>,
+    screen_pos: ScreenPos,
+    current_keyboard_state: KeyboardState,
+    previous_keyboard_state: KeyboardState,
+    player: MovableEntity,
 }
 
 impl Game {
@@ -54,11 +96,19 @@ impl Game {
         let pieces = [[Piece::None; COLS]; ROWS];
         let current_player = Piece::Red;
         let pieces_dropped = HashMap::new();
+        let screen_pos = ScreenPos { x: 0, y: 0 };
+        let current_keyboard_state = KeyboardState::default();
+        let previous_keyboard_state = KeyboardState::default();
+        let player = MovableEntity::default();
         Game {
             area,
             pieces,
             current_player,
             pieces_dropped,
+            screen_pos,
+            current_keyboard_state,
+            previous_keyboard_state,
+            player,
         }
     }
 
@@ -93,6 +143,15 @@ impl Game {
         self.next_turn();
     }
 
+    pub fn handle_keypress(&mut self, movement: Action, keystate: KeyState) {
+        match movement {
+            Action::Up => self.current_keyboard_state.up = keystate,
+            Action::Down => self.current_keyboard_state.down = keystate,
+            Action::Left => self.current_keyboard_state.left = keystate,
+            Action::Right => self.current_keyboard_state.right = keystate,
+        }
+    }
+
     fn next_turn(&mut self) {
         self.pieces_dropped
             .entry(self.current_player)
@@ -105,13 +164,61 @@ impl Game {
         }
     }
 
-    pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
-        self.draw_lines(canvas)?;
-        self.draw_pieces(canvas)?;
+    pub fn update(&mut self) {
+        //main game logic here
 
+        if KeyState::Down == self.current_keyboard_state.left {
+            if self.player.velocity[0] >= -PLAYER_MAX_VERTICAL_SPEED {
+                self.player.velocity[0] -= PLAYER_VERTICAL_ACELERATION;
+            }
+        } else if KeyState::Down == self.current_keyboard_state.right
+            && self.player.velocity[0] <= PLAYER_MAX_VERTICAL_SPEED
+        {
+            self.player.velocity[0] += PLAYER_VERTICAL_ACELERATION;
+        }
+
+        if KeyState::Up == self.current_keyboard_state.left
+            && KeyState::Down == self.previous_keyboard_state.left
+        {
+            self.player.velocity[0] = 0;
+        } else if KeyState::Up == self.current_keyboard_state.right
+            && KeyState::Down == self.previous_keyboard_state.right
+        {
+            self.player.velocity[0] = 0;
+        }
+
+        if let KeyState::Down = self.current_keyboard_state.down {
+            self.screen_pos.y -= 10
+        } else if let KeyState::Down = self.current_keyboard_state.up {
+            self.screen_pos.y += 10
+        }
+
+        // if self.player.position[1] > 500 {}
+        self.player.position[0] += self.player.velocity[0];
+        self.player.position[1] += self.player.velocity[1];
+
+        self.previous_keyboard_state = self.current_keyboard_state;
+    }
+
+    pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+        // self.draw_lines(canvas)?;
+        self.draw_pieces(canvas)?;
+        self.draw_player(canvas)?;
         Ok(())
     }
 
+    fn draw_player(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+        canvas.set_draw_color(Color::BLUE);
+        let square: Rect = Rect::new(
+            self.player.position[0] - self.screen_pos.x,
+            self.player.position[1] - self.screen_pos.y,
+            50,
+            50,
+        );
+        println!("draw_player: {:?}", self.player);
+        canvas.fill_rect(square)?;
+        Ok(())
+    }
     fn draw_pieces(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         let (width, height) = self.cell_sides();
         let (width, height) = (width as i16, height as i16);
@@ -123,7 +230,7 @@ impl Game {
                 canvas.set_draw_color(color);
                 let x = (width / 2) + width * column as i16;
                 let y = (height / 2) + height * line as i16;
-                canvas.filled_circle(x, y, width / 4, color)?
+                // canvas.filled_circle(x, y, width / 4, color)?;
             }
         }
 
