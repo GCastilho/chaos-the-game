@@ -6,6 +6,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use std::cmp;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
@@ -44,18 +45,30 @@ impl Distribution<Piece> for Standard {
 const ROWS: usize = 5;
 const COLS: usize = 5;
 
-const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
-const PLAYER_VERTICAL_ACELERATION: i32 = 1;
+const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
+const PLAYER_HORIZONTAL_ACELERATION: i32 = 1;
 
-struct ScreenPos {
+#[derive(Debug, Default)]
+struct Coordinates {
     x: i32,
     y: i32,
 }
 
 #[derive(Default, Debug)]
 pub struct MovableEntity {
-    position: [i32; 2],
-    velocity: [i32; 2],
+    position: Coordinates,
+    velocity: Coordinates,
+}
+
+impl Display for MovableEntity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "position: ({},{}), velocity: ({},{})",
+            self.position.x, self.position.y, self.velocity.x, self.velocity.y
+        )?;
+        Ok(())
+    }
 }
 
 trait Enemy {
@@ -67,7 +80,7 @@ pub struct Game {
     pieces: [[Piece; COLS]; ROWS],
     current_player: Piece,
     pieces_dropped: HashMap<Piece, usize>,
-    screen_pos: ScreenPos,
+    screen_pos: Coordinates,
     player: MovableEntity,
     inputs: InputController,
 }
@@ -77,7 +90,7 @@ impl Game {
         let pieces = [[Piece::None; COLS]; ROWS];
         let current_player = Piece::Red;
         let pieces_dropped = HashMap::new();
-        let screen_pos = ScreenPos { x: 0, y: 0 };
+        let screen_pos = Coordinates::default();
         let player = MovableEntity::default();
         let input_controller = InputController::new();
         Game {
@@ -142,19 +155,23 @@ impl Game {
         //main game logic here
 
         if self.inputs.state[Action::Left].is_active() {
-            if self.player.velocity[0] >= -PLAYER_MAX_VERTICAL_SPEED {
-                self.player.velocity[0] -= PLAYER_VERTICAL_ACELERATION;
+            if self.player.velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
+                self.player.velocity.x -= PLAYER_HORIZONTAL_ACELERATION;
             }
         } else if self.inputs.state[Action::Right].is_active()
-            && self.player.velocity[0] <= PLAYER_MAX_VERTICAL_SPEED
+            && self.player.velocity.x <= PLAYER_MAX_HORIZONTAL_SPEED
         {
-            self.player.velocity[0] += PLAYER_VERTICAL_ACELERATION;
+            self.player.velocity.x += PLAYER_HORIZONTAL_ACELERATION;
         }
 
-        if self.inputs.last.is(Action::Left, KeyState::Up) {
-            self.player.velocity[0] = 0;
-        } else if self.inputs.last.is(Action::Right, KeyState::Up) {
-            self.player.velocity[0] = 0;
+        if !self.inputs.state[Action::Left].is_active()
+            && !self.inputs.state[Action::Right].is_active()
+        {
+            match self.player.velocity.x.cmp(&0) {
+                cmp::Ordering::Less => self.player.velocity.x += PLAYER_HORIZONTAL_ACELERATION,
+                cmp::Ordering::Greater => self.player.velocity.x -= PLAYER_HORIZONTAL_ACELERATION,
+                cmp::Ordering::Equal => (),
+            }
         }
 
         if self.inputs.state[Action::Down].is_active() {
@@ -164,8 +181,8 @@ impl Game {
         }
 
         // if self.player.position[1] > 500 {}
-        self.player.position[0] += self.player.velocity[0];
-        self.player.position[1] += self.player.velocity[1];
+        self.player.position.x += self.player.velocity.x;
+        self.player.position.y += self.player.velocity.y;
     }
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
@@ -178,12 +195,12 @@ impl Game {
     fn draw_player(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         canvas.set_draw_color(Color::BLUE);
         let square: Rect = Rect::new(
-            self.player.position[0] - self.screen_pos.x,
-            self.player.position[1] - self.screen_pos.y,
+            self.player.position.x - self.screen_pos.x,
+            self.player.position.y - self.screen_pos.y,
             50,
             50,
         );
-        println!("draw_player: {:?}", self.player);
+        println!("draw_player: {}", self.player);
         canvas.fill_rect(square)?;
         Ok(())
     }
