@@ -48,6 +48,9 @@ const COLS: usize = 5;
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
 const PLAYER_HORIZONTAL_ACELERATION: i32 = 1;
 
+const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
+const PLAYER_VERTICAL_ACELERATION: i32 = 1;
+
 #[derive(Debug, Default)]
 struct Coordinates {
     x: i32,
@@ -60,6 +63,12 @@ pub struct MovableEntity {
     velocity: Coordinates,
 }
 
+#[derive(Default, Debug)]
+pub struct Colision{
+    position: Coordinates,
+    width: i32,
+    height: i32,
+}
 impl Display for MovableEntity {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -151,6 +160,17 @@ impl Game {
         }
     }
 
+    fn is_grounded(&mut self) -> Colision {
+
+        return Colision {
+            position: Coordinates { x: 0, y: 300 },
+            width: 200,
+            height: 10,
+        }
+        // return self.player.position.y >= 300;;
+ 
+    }
+
     pub fn update(&mut self) {
         //main game logic here
 
@@ -175,14 +195,30 @@ impl Game {
         }
 
         if self.inputs.state[Action::Down].is_active() {
-            self.screen_pos.y -= 10
+            // if !self.isGrounded(){
+                self.player.velocity.y = -10
+            // }
         } else if self.inputs.state[Action::Up].is_active() {
-            self.screen_pos.y += 10
+            // if !self.isGrounded(){
+                self.player.velocity.y = -10
+            // }
         }
 
-        // if self.player.position[1] > 500 {}
+        //apply gravity
+        if self.player.velocity.y < PLAYER_MAX_VERTICAL_SPEED{
+            self.player.velocity.y += PLAYER_VERTICAL_ACELERATION;// need to be refatored to use a secondary gravity value instead of altering velocity directly
+        }
+       
+        let downColision:Colision = self.is_grounded();
+
         self.player.position.x += self.player.velocity.x;
         self.player.position.y += self.player.velocity.y;
+
+
+        let downColisionPosition = downColision.position.y - downColision.height/2;
+        if self.player.position.y > downColisionPosition{
+            self.player.position.y = downColisionPosition;
+        }
     }
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
