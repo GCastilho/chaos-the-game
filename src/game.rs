@@ -43,6 +43,22 @@ impl Entity {
         );
         canvas.fill_rect(square)
     }
+
+    pub fn get_left(&self) -> i32 {
+        self.position.x
+    }
+
+    pub fn get_right(&self) -> i32 {
+        self.position.x + self.shape.width as i32
+    }
+
+    pub fn get_up(&self) -> i32 {
+        self.position.y + self.shape.height as i32
+    }
+
+    pub fn get_down(&self) -> i32 {
+        self.position.y
+    }
 }
 
 struct Player {
@@ -54,9 +70,9 @@ impl Player {
     pub fn new() -> Self {
         let velocity = Coordinates::default();
         let entity = Entity::builder()
-            .position(Coordinates::builder().x(100).y(600).build())
+            .position(Coordinates::builder().x(120).y(600).build())
             .shape(Dimentions::builder().height(50).width(50).build())
-            .color(Color::MAGENTA)
+            .color(Color::BLUE)
             .build();
         Self { entity, velocity }
     }
@@ -74,9 +90,9 @@ impl Game {
         let new_player = Player::new();
 
         let floor = Entity::builder()
-            .color(Color::YELLOW)
-            .shape(Dimentions::builder().height(10).width(600).build())
-            .position(Coordinates::builder().y(200).x(0).build())
+            .color(Color::GREEN)
+            .shape(Dimentions::builder().height(10).width(400).build())
+            .position(Coordinates::builder().y(100).x(100).build())
             .build();
 
         Game {
@@ -118,13 +134,9 @@ impl Game {
         }
 
         if self.inputs.state[Action::Down].is_active() {
-            // if !self.isGrounded(){
-            self.player.velocity.y = 10
-            // }
+            self.player.velocity.y = -10
         } else if self.inputs.state[Action::Up].is_active() {
-            // if !self.isGrounded(){
             self.player.velocity.y = 10
-            // }
         }
 
         self.gravitate();
@@ -135,12 +147,17 @@ impl Game {
         let down_colision = self.get_closest_ground();
         let down_colision_position = down_colision.position.y + down_colision.shape.height as i32;
         println!(
-            "down_colision_position: {down_colision_position}; {:?}",
-            self.player.entity.position
+            "down_colision_position: {down_colision_position}; {:?}; {:?}",
+            self.player.entity.position, self.player.velocity
         );
 
-        if (self.player.entity.position.y) < down_colision_position {
-            self.player.entity.position.y = down_colision_position;
+        if self.player.velocity.y < 0
+            && self.player.entity.get_right() > down_colision.get_left()
+            && self.player.entity.get_left() < down_colision.get_right()
+            && (self.player.entity.get_down()) < down_colision.get_up()
+            && (self.player.entity.get_up()) > down_colision.get_down()
+        {
+            self.player.entity.position.y = down_colision.get_up();
             self.player.velocity.y = 0;
         }
     }
