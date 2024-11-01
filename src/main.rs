@@ -6,7 +6,6 @@ use keyboard::InputEvent;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
 use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 800;
@@ -33,7 +32,7 @@ fn main() -> Result<(), String> {
     canvas.clear();
     canvas.present();
 
-    let mut game = Game::new(Rect::new(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
+    let mut game = Game::new();
 
     let mut event_pump = sdl_context
         .event_pump()
@@ -49,14 +48,14 @@ fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::MouseButtonDown { x, y, .. } => {
-                    game.handle_click(x as usize, y as usize);
-                }
                 Event::KeyDown { .. } | Event::KeyUp { .. } => {
                     if let Ok(input_event) = InputEvent::try_from(event) {
                         println!("{input_event:?}");
                         game.handle_keypress(input_event);
                     }
+                }
+                Event::MouseMotion { x, y, .. } => {
+                    println!("motion: ({x},{y})");
                 }
                 _ => {}
             }
