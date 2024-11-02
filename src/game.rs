@@ -25,6 +25,14 @@ struct Dimentions {
     height: u32,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum CollisionAxis {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 #[derive(Debug, TypedBuilder, Clone, Copy)]
 struct Entity {
     position: Coordinates,
@@ -44,19 +52,52 @@ impl Entity {
         canvas.fill_rect(square)
     }
 
-    pub fn get_left(&self) -> i32 {
+    pub fn colides_with(&self, other: &Entity) -> Option<CollisionAxis> {
+        let collides = self.left() < other.right() &&
+            self.right() > other.left() &&
+            self.bottom() < other.top() &&
+            self.top() > other.bottom();
+        if !collides {
+            return None;
+        };
+
+        use cmp::Ordering::*;
+
+        let y_up = self.top() - other.bottom();
+        let y_down = other.top() - self.bottom();
+        let x_right = self.right() - other.left();
+        let x_left = other.right() - self.left();
+
+        let (y_axis, y_value) = match y_up.cmp(&y_down) {
+            Greater | Equal => (CollisionAxis::Down, y_down),
+            Less => (CollisionAxis::Up, y_up),
+        };
+
+        let (x_axis, x_value) = match x_left.cmp(&x_right) {
+            Greater | Equal => (CollisionAxis::Right, x_right),
+            Less => (CollisionAxis::Left, x_left),
+        };
+
+        match y_value.cmp(&x_value) {
+            Greater => Some(x_axis),
+            Less => Some(y_axis),
+            Equal => None,
+        }
+    }
+
+    pub fn left(&self) -> i32 {
         self.position.x
     }
 
-    pub fn get_right(&self) -> i32 {
+    pub fn right(&self) -> i32 {
         self.position.x + self.shape.width as i32
     }
 
-    pub fn get_up(&self) -> i32 {
+    pub fn top(&self) -> i32 {
         self.position.y + self.shape.height as i32
     }
 
-    pub fn get_down(&self) -> i32 {
+    pub fn bottom(&self) -> i32 {
         self.position.y
     }
 }
@@ -144,21 +185,33 @@ impl Game {
         self.player.entity.position.x += self.player.velocity.x;
         self.player.entity.position.y += self.player.velocity.y;
 
-        let down_colision = self.get_closest_ground();
-        let down_colision_position = down_colision.position.y + down_colision.shape.height as i32;
-        println!(
-            "down_colision_position: {down_colision_position}; {:?}; {:?}",
-            self.player.entity.position, self.player.velocity
-        );
+        if let Some(axis) = self.player.entity.colides_with(&self.floor) {
+            self.player.entity.color = Color::RED;
 
-        if self.player.velocity.y < 0
-            && self.player.entity.get_right() > down_colision.get_left()
-            && self.player.entity.get_left() < down_colision.get_right()
-            && (self.player.entity.get_down()) < down_colision.get_up()
-            && (self.player.entity.get_up()) > down_colision.get_down()
-        {
-            self.player.entity.position.y = down_colision.get_up();
-            self.player.velocity.y = 0;
+            match axis {
+                CollisionAxis::Up | CollisionAxis::Down => {
+                    self.player.velocity.y = 0;
+                }
+                CollisionAxis::Left | CollisionAxis::Right => {
+                    self.player.velocity.x = 0;
+                }
+            }
+            match axis {
+                CollisionAxis::Up => {
+                    self.player.entity.position.y = self.floor.bottom() - self.player.entity.shape.height as i32;
+                }
+                CollisionAxis::Down => {
+                    self.player.entity.position.y = self.floor.top();
+                }
+                CollisionAxis::Left => {
+                    self.player.entity.position.x = self.floor.right();
+                }
+                CollisionAxis::Right => {
+                    self.player.entity.position.x = self.floor.left() - self.player.entity.shape.width as i32;
+                }
+            }
+        } else {
+            self.player.entity.color = Color::BLUE;
         }
     }
 
