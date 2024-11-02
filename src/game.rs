@@ -8,21 +8,15 @@ use typed_builder::TypedBuilder;
 use crate::keyboard::{Action, InputController, InputEvent};
 
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
-const PLAYER_HORIZONTAL_ACELERATION: i32 = 1;
+const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
 
 const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
-const PLAYER_VERTICAL_ACELERATION: i32 = 1;
+const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
 #[derive(Debug, Clone, Copy, Default, TypedBuilder)]
 struct Coordinates {
     x: i32,
     y: i32,
-}
-
-#[derive(Debug, Clone, Copy, TypedBuilder)]
-struct Dimentions {
-    width: u32,
-    height: u32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -35,8 +29,10 @@ enum CollisionAxis {
 
 #[derive(Debug, TypedBuilder, Clone, Copy)]
 struct Entity {
-    position: Coordinates,
-    shape: Dimentions,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
     color: Color,
 }
 
@@ -44,10 +40,10 @@ impl Entity {
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         canvas.set_draw_color(self.color);
         let square: Rect = Rect::new(
-            self.position.x,
-            canvas.window().size().1 as i32 - self.position.y - self.shape.height as i32,
-            self.shape.width,
-            self.shape.height,
+            self.x,
+            canvas.window().size().1 as i32 - self.y - self.height as i32,
+            self.width,
+            self.height,
         );
         canvas.fill_rect(square)
     }
@@ -86,19 +82,19 @@ impl Entity {
     }
 
     pub fn left(&self) -> i32 {
-        self.position.x
+        self.x
     }
 
     pub fn right(&self) -> i32 {
-        self.position.x + self.shape.width as i32
+        self.x + self.width as i32
     }
 
     pub fn top(&self) -> i32 {
-        self.position.y + self.shape.height as i32
+        self.y + self.height as i32
     }
 
     pub fn bottom(&self) -> i32 {
-        self.position.y
+        self.y
     }
 }
 
@@ -111,8 +107,8 @@ impl Player {
     pub fn new() -> Self {
         let velocity = Coordinates::default();
         let entity = Entity::builder()
-            .position(Coordinates::builder().x(120).y(600).build())
-            .shape(Dimentions::builder().height(50).width(50).build())
+            .x(120).y(600)
+            .height(50).width(50)
             .color(Color::BLUE)
             .build();
         Self { entity, velocity }
@@ -132,8 +128,8 @@ impl Game {
 
         let floor = Entity::builder()
             .color(Color::GREEN)
-            .shape(Dimentions::builder().height(10).width(400).build())
-            .position(Coordinates::builder().y(100).x(100).build())
+            .y(100).x(100)
+            .height(10).width(400)
             .build();
 
         Game {
@@ -157,19 +153,19 @@ impl Game {
         if self.inputs.state[Action::Left].is_active()
             && self.player.velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED
         {
-            self.player.velocity.x -= PLAYER_HORIZONTAL_ACELERATION;
+            self.player.velocity.x -= PLAYER_HORIZONTAL_ACCELERATION;
         } else if self.inputs.state[Action::Right].is_active()
             && self.player.velocity.x <= PLAYER_MAX_HORIZONTAL_SPEED
         {
-            self.player.velocity.x += PLAYER_HORIZONTAL_ACELERATION;
+            self.player.velocity.x += PLAYER_HORIZONTAL_ACCELERATION;
         }
 
         if !self.inputs.state[Action::Left].is_active()
             && !self.inputs.state[Action::Right].is_active()
         {
             match self.player.velocity.x.cmp(&0) {
-                cmp::Ordering::Less => self.player.velocity.x += PLAYER_HORIZONTAL_ACELERATION,
-                cmp::Ordering::Greater => self.player.velocity.x -= PLAYER_HORIZONTAL_ACELERATION,
+                cmp::Ordering::Less => self.player.velocity.x += PLAYER_HORIZONTAL_ACCELERATION,
+                cmp::Ordering::Greater => self.player.velocity.x -= PLAYER_HORIZONTAL_ACCELERATION,
                 cmp::Ordering::Equal => (),
             }
         }
@@ -182,8 +178,8 @@ impl Game {
 
         self.gravitate();
 
-        self.player.entity.position.x += self.player.velocity.x;
-        self.player.entity.position.y += self.player.velocity.y;
+        self.player.entity.x += self.player.velocity.x;
+        self.player.entity.y += self.player.velocity.y;
 
         if let Some(axis) = self.player.entity.colides_with(&self.floor) {
             self.player.entity.color = Color::RED;
@@ -198,16 +194,16 @@ impl Game {
             }
             match axis {
                 CollisionAxis::Up => {
-                    self.player.entity.position.y = self.floor.bottom() - self.player.entity.shape.height as i32;
+                    self.player.entity.y = self.floor.bottom() - self.player.entity.height as i32;
                 }
                 CollisionAxis::Down => {
-                    self.player.entity.position.y = self.floor.top();
+                    self.player.entity.y = self.floor.top();
                 }
                 CollisionAxis::Left => {
-                    self.player.entity.position.x = self.floor.right();
+                    self.player.entity.x = self.floor.right();
                 }
                 CollisionAxis::Right => {
-                    self.player.entity.position.x = self.floor.left() - self.player.entity.shape.width as i32;
+                    self.player.entity.x = self.floor.left() - self.player.entity.width as i32;
                 }
             }
         } else {
@@ -217,7 +213,7 @@ impl Game {
 
     fn gravitate(&mut self) {
         if self.player.velocity.y < PLAYER_MAX_VERTICAL_SPEED {
-            self.player.velocity.y -= PLAYER_VERTICAL_ACELERATION; // need to be refatored to use a secondary gravity value instead of altering velocity directly
+            self.player.velocity.y -= PLAYER_VERTICAL_ACCELERATION; // need to be refatored to use a secondary gravity value instead of altering velocity directly
         }
     }
 
