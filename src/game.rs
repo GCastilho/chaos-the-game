@@ -48,15 +48,17 @@ impl Entity {
         canvas.fill_rect(square)
     }
 
-    pub fn colides_with(&self, other: &Entity) -> Option<CollisionAxis> {
-        let collides = self.left() < other.right() &&
-            self.right() > other.left() &&
-            self.bottom() < other.top() &&
-            self.top() > other.bottom();
-        if !collides {
-            return None;
-        };
+    pub fn colides_with(&self, other: &Entity) -> bool {
+        self.left() < other.right()
+            && self.right() > other.left()
+            && self.bottom() < other.top()
+            && self.top() > other.bottom()
+    }
 
+    pub fn colides_with_axis(&self, other: &Entity) -> Option<CollisionAxis> {
+        if !self.colides_with(other) {
+            return None;
+        }
         use cmp::Ordering::*;
 
         let y_up = self.top() - other.bottom();
@@ -98,6 +100,25 @@ impl Entity {
     }
 }
 
+enum CoinKind {
+    Color,
+    Jump(u32),
+}
+
+struct Coin {
+    entity: Entity,
+    kind: CoinKind,
+}
+
+impl Coin {
+    pub fn handle_collision_with(&self, player: &mut Player) {
+        match self.kind {
+            CoinKind::Color => player.entity.color = self.entity.color,
+            CoinKind::Jump(amount) => player.velocity.y = amount as i32,
+        }
+    }
+}
+
 struct Player {
     entity: Entity,
     velocity: Coordinates,
@@ -107,8 +128,10 @@ impl Player {
     pub fn new() -> Self {
         let velocity = Coordinates::default();
         let entity = Entity::builder()
-            .x(120).y(600)
-            .height(50).width(50)
+            .x(150)
+            .y(600)
+            .height(50)
+            .width(50)
             .color(Color::BLUE)
             .build();
         Self { entity, velocity }
@@ -118,6 +141,7 @@ impl Player {
 pub struct Game {
     floor: Entity,
     player: Player,
+    coins: Vec<Coin>,
     inputs: InputController,
 }
 
@@ -128,13 +152,49 @@ impl Game {
 
         let floor = Entity::builder()
             .color(Color::GREEN)
-            .y(100).x(100)
-            .height(10).width(400)
+            .y(100)
+            .x(100)
+            .height(10)
+            .width(400)
             .build();
+
+        let coins = vec![
+            Coin {
+                kind: CoinKind::Color,
+                entity: Entity::builder()
+                    .y(115)
+                    .x(120)
+                    .height(10)
+                    .width(10)
+                    .color(Color::MAGENTA)
+                    .build(),
+            },
+            Coin {
+                kind: CoinKind::Color,
+                entity: Entity::builder()
+                    .y(115)
+                    .x(470)
+                    .height(10)
+                    .width(10)
+                    .color(Color::RED)
+                    .build(),
+            },
+            Coin {
+                kind: CoinKind::Jump(20),
+                entity: Entity::builder()
+                    .y(115)
+                    .x(300)
+                    .height(10)
+                    .width(10)
+                    .color(Color::CYAN)
+                    .build(),
+            },
+        ];
 
         Game {
             player: new_player,
             floor,
+            coins,
             inputs: input_controller,
         }
     }
@@ -181,9 +241,7 @@ impl Game {
         self.player.entity.x += self.player.velocity.x;
         self.player.entity.y += self.player.velocity.y;
 
-        if let Some(axis) = self.player.entity.colides_with(&self.floor) {
-            self.player.entity.color = Color::RED;
-
+        if let Some(axis) = self.player.entity.colides_with_axis(&self.floor) {
             match axis {
                 CollisionAxis::Up | CollisionAxis::Down => {
                     self.player.velocity.y = 0;
@@ -206,19 +264,24 @@ impl Game {
                     self.player.entity.x = self.floor.left() - self.player.entity.width as i32;
                 }
             }
-        } else {
-            self.player.entity.color = Color::BLUE;
+        }
+
+        for coin in &self.coins {
+            if self.player.entity.colides_with(&coin.entity) {
+                coin.handle_collision_with(&mut self.player);
+            }
         }
     }
 
     fn gravitate(&mut self) {
-        if self.player.velocity.y < PLAYER_MAX_VERTICAL_SPEED {
-            self.player.velocity.y -= PLAYER_VERTICAL_ACCELERATION; // need to be refatored to use a secondary gravity value instead of altering velocity directly
-        }
+        self.player.velocity.y -= PLAYER_VERTICAL_ACCELERATION;
     }
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         self.floor.draw(canvas)?;
+        for coin in &self.coins {
+            coin.entity.draw(canvas)?;
+        }
         self.player.entity.draw(canvas)?;
         Ok(())
     }
