@@ -13,6 +13,36 @@ const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
 const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
+// TODO: Rename to Entity
+trait Registrable {
+    fn set_entity_id(&mut self, entity_id: EntityId);
+    fn build_entity(&self) -> Entity;
+}
+
+struct EntityId(usize);
+
+#[derive(Debug, Default)]
+struct ECS {
+    entities: Vec<Entity>,
+}
+
+impl ECS {
+    fn get_entity(&self, id: &EntityId) -> Option<&Entity> {
+        self.entities.get(id.0)
+    }
+
+    fn get_entity_mut(&mut self, id: &EntityId) -> Option<&mut Entity> {
+        self.entities.get_mut(id.0)
+    }
+
+    fn register(&mut self, registrable: &mut impl Registrable) {
+        let entity = registrable.build_entity();
+        let id = self.entities.len();
+        self.entities.push(entity);
+        registrable.set_entity_id(EntityId(id));
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, TypedBuilder)]
 struct Coordinates {
     x: i32,
@@ -101,21 +131,42 @@ impl Entity {
 }
 
 enum CoinKind {
-    Color,
+    Color(Color),
     Jump(u32),
 }
 
 struct Coin {
-    entity: Entity,
+    entity_id: Option<EntityId>,
     kind: CoinKind,
+    start_x: i32,
 }
 
 impl Coin {
     pub fn handle_collision_with(&self, player: &mut Player) {
         match self.kind {
-            CoinKind::Color => player.entity.color = self.entity.color,
+            CoinKind::Color(color) => player.entity.color = color,
             CoinKind::Jump(amount) => player.velocity.y = amount as i32,
         }
+    }
+}
+
+impl Registrable for Coin {
+    fn set_entity_id(&mut self, entity_id: EntityId) {
+        self.entity_id = Some(entity_id)
+    }
+
+    fn build_entity(&self) -> Entity {
+        let color = match self.kind {
+            CoinKind::Color(color) => color,
+            CoinKind::Jump(_) => Color::CYAN,
+        };
+        Entity::builder()
+            .color(color)
+            .y(115)
+            .x(self.start_x)
+            .height(10)
+            .width(10)
+            .build()
     }
 }
 
@@ -143,6 +194,7 @@ pub struct Game {
     player: Player,
     coins: Vec<Coin>,
     inputs: InputController,
+    ecs: ECS,
 }
 
 impl Game {
@@ -158,43 +210,34 @@ impl Game {
             .width(400)
             .build();
 
-        let coins = vec![
+        let mut ecs = ECS::default();
+        let mut coins = vec![
             Coin {
-                kind: CoinKind::Color,
-                entity: Entity::builder()
-                    .y(115)
-                    .x(120)
-                    .height(10)
-                    .width(10)
-                    .color(Color::MAGENTA)
-                    .build(),
+                entity_id: None,
+                kind: CoinKind::Color(Color::MAGENTA),
+                start_x: 120,
             },
             Coin {
-                kind: CoinKind::Color,
-                entity: Entity::builder()
-                    .y(115)
-                    .x(470)
-                    .height(10)
-                    .width(10)
-                    .color(Color::RED)
-                    .build(),
+                entity_id: None,
+                kind: CoinKind::Color(Color::RED),
+                start_x: 470,
             },
             Coin {
+                entity_id: None,
                 kind: CoinKind::Jump(20),
-                entity: Entity::builder()
-                    .y(115)
-                    .x(300)
-                    .height(10)
-                    .width(10)
-                    .color(Color::CYAN)
-                    .build(),
+                start_x: 300,
             },
         ];
+
+        for coin in coins.iter_mut() {
+            ecs.register(coin)
+        }
 
         Game {
             player: new_player,
             floor,
             coins,
+            ecs,
             inputs: input_controller,
         }
     }
@@ -267,8 +310,14 @@ impl Game {
         }
 
         for coin in &self.coins {
-            if self.player.entity.colides_with(&coin.entity) {
-                coin.handle_collision_with(&mut self.player);
+            if let Some(entity) = coin
+                .entity_id
+                .as_ref()
+                .and_then(|id| self.ecs.get_entity(id))
+            {
+                if self.player.entity.colides_with(entity) {
+                    coin.handle_collision_with(&mut self.player);
+                }
             }
         }
     }
@@ -279,8 +328,8 @@ impl Game {
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         self.floor.draw(canvas)?;
-        for coin in &self.coins {
-            coin.entity.draw(canvas)?;
+        for entity in &self.ecs.entities {
+            entity.draw(canvas)?;
         }
         self.player.entity.draw(canvas)?;
         Ok(())
