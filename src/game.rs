@@ -19,7 +19,13 @@ trait Registrable {
     fn build_entity(&self) -> Entity;
 }
 
-struct EntityId(usize);
+struct EntityId(Option<usize>);
+
+impl EntityId {
+    pub fn none() -> Self {
+        Self(None)
+    }
+}
 
 #[derive(Debug, Default)]
 struct ECS {
@@ -28,18 +34,18 @@ struct ECS {
 
 impl ECS {
     fn get_entity(&self, id: &EntityId) -> Option<&Entity> {
-        self.entities.get(id.0)
+        self.entities.get(id.0?)
     }
 
     fn get_entity_mut(&mut self, id: &EntityId) -> Option<&mut Entity> {
-        self.entities.get_mut(id.0)
+        self.entities.get_mut(id.0?)
     }
 
     fn register(&mut self, registrable: &mut impl Registrable) {
         let entity = registrable.build_entity();
         let id = self.entities.len();
         self.entities.push(entity);
-        registrable.set_entity_id(EntityId(id));
+        registrable.set_entity_id(EntityId(Some(id)));
     }
 }
 
@@ -136,7 +142,7 @@ enum CoinKind {
 }
 
 struct Coin {
-    entity_id: Option<EntityId>,
+    entity_id: EntityId,
     kind: CoinKind,
     start_x: i32,
 }
@@ -152,7 +158,7 @@ impl Coin {
 
 impl Registrable for Coin {
     fn set_entity_id(&mut self, entity_id: EntityId) {
-        self.entity_id = Some(entity_id)
+        self.entity_id = entity_id
     }
 
     fn build_entity(&self) -> Entity {
@@ -213,17 +219,17 @@ impl Game {
         let mut ecs = ECS::default();
         let mut coins = vec![
             Coin {
-                entity_id: None,
+                entity_id: EntityId::none(),
                 kind: CoinKind::Color(Color::MAGENTA),
                 start_x: 120,
             },
             Coin {
-                entity_id: None,
+                entity_id: EntityId::none(),
                 kind: CoinKind::Color(Color::RED),
                 start_x: 470,
             },
             Coin {
-                entity_id: None,
+                entity_id: EntityId::none(),
                 kind: CoinKind::Jump(20),
                 start_x: 300,
             },
@@ -310,11 +316,7 @@ impl Game {
         }
 
         for coin in &self.coins {
-            if let Some(entity) = coin
-                .entity_id
-                .as_ref()
-                .and_then(|id| self.ecs.get_entity(id))
-            {
+            if let Some(entity) = self.ecs.get_entity(&coin.entity_id) {
                 if self.player.entity.colides_with(entity) {
                     coin.handle_collision_with(&mut self.player);
                 }
