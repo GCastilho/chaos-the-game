@@ -1,3 +1,4 @@
+use itertools::izip;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
@@ -5,49 +6,19 @@ use sdl2::video::Window;
 use std::cmp;
 use typed_builder::TypedBuilder;
 
-use crate::keyboard::{Action, InputController, InputEvent};
+use crate::{
+    ecs::{
+        components::{CoinKind, Position, Rectangle},
+        Ecs,
+    },
+    keyboard::{Action, InputController, InputEvent},
+};
 
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
 const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
 
 const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
-
-// TODO: Rename to Entity
-trait Registrable {
-    fn set_entity_id(&mut self, entity_id: EntityId);
-    fn build_entity(&self) -> Entity;
-}
-
-struct EntityId(Option<usize>);
-
-impl EntityId {
-    pub fn none() -> Self {
-        Self(None)
-    }
-}
-
-#[derive(Debug, Default)]
-struct ECS {
-    entities: Vec<Entity>,
-}
-
-impl ECS {
-    fn get_entity(&self, id: &EntityId) -> Option<&Entity> {
-        self.entities.get(id.0?)
-    }
-
-    fn get_entity_mut(&mut self, id: &EntityId) -> Option<&mut Entity> {
-        self.entities.get_mut(id.0?)
-    }
-
-    fn register(&mut self, registrable: &mut impl Registrable) {
-        let entity = registrable.build_entity();
-        let id = self.entities.len();
-        self.entities.push(entity);
-        registrable.set_entity_id(EntityId(Some(id)));
-    }
-}
 
 #[derive(Debug, Clone, Copy, Default, TypedBuilder)]
 struct Coordinates {
@@ -89,6 +60,14 @@ impl Entity {
             && self.right() > other.left()
             && self.bottom() < other.top()
             && self.top() > other.bottom()
+    }
+
+    pub fn ecs_colides_with(&self, pos: &Position, rect: &Rectangle) -> bool {
+        // madness
+        self.left() < pos.x + rect.width as i32
+            && self.right() > pos.x
+            && self.bottom() < pos.y + rect.height as i32
+            && self.top() > pos.y
     }
 
     pub fn colides_with_axis(&self, other: &Entity) -> Option<CollisionAxis> {
@@ -136,46 +115,6 @@ impl Entity {
     }
 }
 
-enum CoinKind {
-    Color(Color),
-    Jump(u32),
-}
-
-struct Coin {
-    entity_id: EntityId,
-    kind: CoinKind,
-    start_x: i32,
-}
-
-impl Coin {
-    pub fn handle_collision_with(&self, player: &mut Player) {
-        match self.kind {
-            CoinKind::Color(color) => player.entity.color = color,
-            CoinKind::Jump(amount) => player.velocity.y = amount as i32,
-        }
-    }
-}
-
-impl Registrable for Coin {
-    fn set_entity_id(&mut self, entity_id: EntityId) {
-        self.entity_id = entity_id
-    }
-
-    fn build_entity(&self) -> Entity {
-        let color = match self.kind {
-            CoinKind::Color(color) => color,
-            CoinKind::Jump(_) => Color::CYAN,
-        };
-        Entity::builder()
-            .color(color)
-            .y(115)
-            .x(self.start_x)
-            .height(10)
-            .width(10)
-            .build()
-    }
-}
-
 struct Player {
     entity: Entity,
     velocity: Coordinates,
@@ -198,9 +137,8 @@ impl Player {
 pub struct Game {
     floor: Entity,
     player: Player,
-    coins: Vec<Coin>,
     inputs: InputController,
-    ecs: ECS,
+    ecs: Ecs,
 }
 
 impl Game {
@@ -216,34 +154,41 @@ impl Game {
             .width(400)
             .build();
 
-        let mut ecs = ECS::default();
-        let mut coins = vec![
-            Coin {
-                entity_id: EntityId::none(),
-                kind: CoinKind::Color(Color::MAGENTA),
-                start_x: 120,
-            },
-            Coin {
-                entity_id: EntityId::none(),
-                kind: CoinKind::Color(Color::RED),
-                start_x: 470,
-            },
-            Coin {
-                entity_id: EntityId::none(),
-                kind: CoinKind::Jump(20),
-                start_x: 300,
-            },
-        ];
+        let mut ecs2 = Ecs::new();
 
-        for coin in coins.iter_mut() {
-            ecs.register(coin)
-        }
+        let coin_rect = Rectangle {
+            width: 10,
+            height: 10,
+        };
+
+        // Temp floor
+        ecs2.create_entity()
+            .with_position(Position { x: 100, y: 150 })
+            .with_rect(Rectangle {
+                height: 10,
+                width: 400,
+            })
+            .with_color(Color::CYAN);
+
+        ecs2.create_entity()
+            .with_rect(coin_rect)
+            .with_position(Position { x: 120, y: 115 })
+            .with_coind_kind(CoinKind::Color(Color::MAGENTA));
+
+        ecs2.create_entity()
+            .with_rect(coin_rect)
+            .with_position(Position { x: 470, y: 115 })
+            .with_coind_kind(CoinKind::Color(Color::RED));
+
+        ecs2.create_entity()
+            .with_rect(coin_rect)
+            .with_position(Position { x: 300, y: 115 })
+            .with_coind_kind(CoinKind::Jump(20));
 
         Game {
             player: new_player,
             floor,
-            coins,
-            ecs,
+            ecs: ecs2,
             inputs: input_controller,
         }
     }
@@ -315,13 +260,23 @@ impl Game {
             }
         }
 
-        for coin in &self.coins {
-            if let Some(entity) = self.ecs.get_entity(&coin.entity_id) {
-                if self.player.entity.colides_with(entity) {
-                    coin.handle_collision_with(&mut self.player);
+        // Service: handle player colision with coin
+        izip!(
+            self.ecs.positions(),
+            self.ecs.rects(),
+            self.ecs.coin_kinds()
+        )
+        .filter_map(|(pos, rect, color_kinds)| {
+            pos.and_then(|p| rect.and_then(|r| color_kinds.map(|c| (p, r, c))))
+        })
+        .for_each(|(pos, rect, color)| {
+            if self.player.entity.ecs_colides_with(&pos, &rect) {
+                match color {
+                    CoinKind::Color(color) => self.player.entity.color = color,
+                    CoinKind::Jump(amount) => self.player.velocity.y = amount as i32,
                 }
             }
-        }
+        });
     }
 
     fn gravitate(&mut self) {
@@ -330,9 +285,22 @@ impl Game {
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         self.floor.draw(canvas)?;
-        for entity in &self.ecs.entities {
-            entity.draw(canvas)?;
+
+        for (pos, rect, color) in izip!(self.ecs.positions(), self.ecs.rects(), self.ecs.colors())
+            .filter_map(|(pos, rect, color)| {
+                pos.and_then(|p| rect.and_then(|r| color.map(|c| (p, r, c))))
+            })
+        {
+            canvas.set_draw_color(color);
+            let square: Rect = Rect::new(
+                pos.x,
+                canvas.window().size().1 as i32 - pos.y - rect.height as i32,
+                rect.width,
+                rect.height,
+            );
+            canvas.fill_rect(square)?;
         }
+
         self.player.entity.draw(canvas)?;
         Ok(())
     }

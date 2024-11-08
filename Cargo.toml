@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 enum-map = "2.7.3"
+itertools = "0.13.0"
 sdl2 = { version = "0.37.0", features = ["gfx", "static-link", "use-vcpkg"] }
 strum = { version = "0.26.3", features = ["derive"] }
 typed-builder = "0.20.0"
