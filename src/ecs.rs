@@ -1,10 +1,25 @@
+use crate::ecs::components::Velocity;
 use components::{CoinKind, Position, Rectangle, Solid};
 use sdl2::pixels::Color;
+use std::cell::RefCell;
+use std::ops::Deref;
 
 pub mod components;
 
+#[derive(Debug, Clone, Copy)]
+pub struct Entity(usize);
+
+impl Deref for Entity {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 pub struct Ecs {
-    positions: Vec<Option<Position>>,
+    positions: Vec<Option<RefCell<Position>>>,
+    velocities: Vec<Option<RefCell<Velocity>>>,
     rects: Vec<Option<Rectangle>>,
     colors: Vec<Option<Color>>,
     coin_kinds: Vec<Option<CoinKind>>,
@@ -15,6 +30,7 @@ impl Ecs {
     pub fn new() -> Self {
         Self {
             positions: vec![],
+            velocities: vec![],
             rects: vec![],
             colors: vec![],
             coin_kinds: vec![],
@@ -24,6 +40,7 @@ impl Ecs {
 
     pub fn create_entity(&mut self) -> &mut Self {
         self.positions.push(None);
+        self.velocities.push(None);
         self.rects.push(None);
         self.colors.push(None);
         self.coin_kinds.push(None);
@@ -34,7 +51,14 @@ impl Ecs {
     pub fn with_position(&mut self, position: Position) -> &mut Self {
         self.positions
             .last_mut()
-            .and_then(|last| last.replace(position));
+            .and_then(|last| last.replace(RefCell::new(position)));
+        self
+    }
+
+    pub fn with_velocity(&mut self, velocity: Velocity) -> &mut Self {
+        self.velocities
+            .last_mut()
+            .and_then(|last| last.replace(RefCell::new(velocity)));
         self
     }
 
@@ -66,8 +90,16 @@ impl Ecs {
         self
     }
 
-    pub fn positions(&self) -> &[Option<Position>] {
+    pub fn entity(&self) -> Entity {
+        Entity(self.positions.len() - 1)
+    }
+
+    pub fn positions(&self) -> &[Option<RefCell<Position>>] {
         &self.positions
+    }
+
+    pub fn velocities(&self) -> &[Option<RefCell<Velocity>>] {
+        &self.velocities
     }
 
     pub fn rects(&self) -> &[Option<Rectangle>] {
