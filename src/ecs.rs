@@ -1,4 +1,4 @@
-use components::{CoinKind, Position, Rectangle};
+use components::{CoinKind, Position, Rectangle, Solid};
 use sdl2::pixels::Color;
 
 pub mod components;
@@ -8,6 +8,7 @@ pub struct Ecs {
     rects: Vec<Option<Rectangle>>,
     colors: Vec<Option<Color>>,
     coin_kinds: Vec<Option<CoinKind>>,
+    solids: Vec<Option<Solid>>,
 }
 
 impl Ecs {
@@ -17,6 +18,7 @@ impl Ecs {
             rects: vec![],
             colors: vec![],
             coin_kinds: vec![],
+            solids: vec![],
         }
     }
 
@@ -25,6 +27,7 @@ impl Ecs {
         self.rects.push(None);
         self.colors.push(None);
         self.coin_kinds.push(None);
+        self.solids.push(None);
         self
     }
 
@@ -42,6 +45,11 @@ impl Ecs {
 
     pub fn with_color(&mut self, color: Color) -> &mut Self {
         self.colors.last_mut().and_then(|last| last.replace(color));
+        self
+    }
+
+    pub fn with_solids(&mut self, solid: Solid) -> &mut Self {
+        self.solids.last_mut().and_then(|last| last.replace(solid));
         self
     }
 
@@ -72,5 +80,9 @@ impl Ecs {
 
     pub fn coin_kinds(&self) -> &[Option<CoinKind>] {
         &self.coin_kinds
+    }
+
+    pub fn solids(&self) -> &[Option<Solid>] {
+        &self.solids
     }
 }

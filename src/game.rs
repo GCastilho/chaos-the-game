@@ -4,11 +4,13 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use std::cmp;
+use std::cmp::Ordering::{Equal, Greater, Less};
 use typed_builder::TypedBuilder;
 
+use crate::ecs::components::Hitbox;
 use crate::{
     ecs::{
-        components::{CoinKind, Position, Rectangle},
+        components::{CoinKind, Position, Rectangle, Solid},
         Ecs,
     },
     keyboard::{Action, InputController, InputEvent},
@@ -27,7 +29,7 @@ struct Coordinates {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum CollisionAxis {
+pub enum CollisionAxis {
     Up,
     Down,
     Left,
@@ -35,7 +37,7 @@ enum CollisionAxis {
 }
 
 #[derive(Debug, TypedBuilder, Clone, Copy)]
-struct Entity {
+pub struct Entity {
     x: i32,
     y: i32,
     width: u32,
@@ -55,22 +57,14 @@ impl Entity {
         canvas.fill_rect(square)
     }
 
-    pub fn colides_with(&self, other: &Entity) -> bool {
-        self.left() < other.right()
-            && self.right() > other.left()
-            && self.bottom() < other.top()
-            && self.top() > other.bottom()
+    pub fn colides_with(&self, hitbox: &Hitbox) -> bool {
+        self.left() < hitbox.right()
+            && self.right() > hitbox.left()
+            && self.bottom() < hitbox.top()
+            && self.top() > hitbox.bottom()
     }
 
-    pub fn ecs_colides_with(&self, pos: &Position, rect: &Rectangle) -> bool {
-        // madness
-        self.left() < pos.x + rect.width as i32
-            && self.right() > pos.x
-            && self.bottom() < pos.y + rect.height as i32
-            && self.top() > pos.y
-    }
-
-    pub fn colides_with_axis(&self, other: &Entity) -> Option<CollisionAxis> {
+    pub fn colides_with_axis(&self, other: &Hitbox) -> Option<CollisionAxis> {
         if !self.colides_with(other) {
             return None;
         }
@@ -115,6 +109,7 @@ impl Entity {
     }
 }
 
+// TODO: Player ser component
 struct Player {
     entity: Entity,
     velocity: Coordinates,
@@ -135,7 +130,6 @@ impl Player {
 }
 
 pub struct Game {
-    floor: Entity,
     player: Player,
     inputs: InputController,
     ecs: Ecs,
@@ -146,14 +140,6 @@ impl Game {
         let input_controller = InputController::new();
         let new_player = Player::new();
 
-        let floor = Entity::builder()
-            .color(Color::GREEN)
-            .y(100)
-            .x(100)
-            .height(10)
-            .width(400)
-            .build();
-
         let mut ecs2 = Ecs::new();
 
         let coin_rect = Rectangle {
@@ -163,12 +149,13 @@ impl Game {
 
         // Temp floor
         ecs2.create_entity()
-            .with_position(Position { x: 100, y: 150 })
+            .with_position(Position { x: 100, y: 100 })
             .with_rect(Rectangle {
                 height: 10,
                 width: 400,
             })
-            .with_color(Color::CYAN);
+            .with_color(Color::GREEN)
+            .with_solids(Solid::all());
 
         ecs2.create_entity()
             .with_rect(coin_rect)
@@ -187,7 +174,6 @@ impl Game {
 
         Game {
             player: new_player,
-            floor,
             ecs: ecs2,
             inputs: input_controller,
         }
@@ -195,10 +181,6 @@ impl Game {
 
     pub fn handle_keypress(&mut self, input_event: InputEvent) {
         self.inputs.handle_input_event(input_event);
-    }
-
-    fn get_closest_ground(&mut self) -> Entity {
-        self.floor
     }
 
     pub fn update(&mut self) {
@@ -235,27 +217,35 @@ impl Game {
         self.player.entity.x += self.player.velocity.x;
         self.player.entity.y += self.player.velocity.y;
 
-        if let Some(axis) = self.player.entity.colides_with_axis(&self.floor) {
-            match axis {
-                CollisionAxis::Up | CollisionAxis::Down => {
-                    self.player.velocity.y = 0;
+        for (pos, rect, solid) in izip!(self.ecs.positions(), self.ecs.rects(), self.ecs.solids(),)
+            .filter_map(|(pos, rect, solid)| {
+                pos.and_then(|p| rect.and_then(|r| solid.map(|s| (p, r, s))))
+            })
+        {
+            // if !solid { continue; }
+            let hitbox = rect.on_position(&pos);
+            if let Some(axis) = self.player.entity.colides_with_axis(&hitbox) {
+                match axis {
+                    CollisionAxis::Up | CollisionAxis::Down => {
+                        self.player.velocity.y = 0;
+                    }
+                    CollisionAxis::Left | CollisionAxis::Right => {
+                        self.player.velocity.x = 0;
+                    }
                 }
-                CollisionAxis::Left | CollisionAxis::Right => {
-                    self.player.velocity.x = 0;
-                }
-            }
-            match axis {
-                CollisionAxis::Up => {
-                    self.player.entity.y = self.floor.bottom() - self.player.entity.height as i32;
-                }
-                CollisionAxis::Down => {
-                    self.player.entity.y = self.floor.top();
-                }
-                CollisionAxis::Left => {
-                    self.player.entity.x = self.floor.right();
-                }
-                CollisionAxis::Right => {
-                    self.player.entity.x = self.floor.left() - self.player.entity.width as i32;
+                match axis {
+                    CollisionAxis::Up => {
+                        self.player.entity.y = hitbox.bottom() - self.player.entity.height as i32;
+                    }
+                    CollisionAxis::Down => {
+                        self.player.entity.y = hitbox.top();
+                    }
+                    CollisionAxis::Left => {
+                        self.player.entity.x = hitbox.right();
+                    }
+                    CollisionAxis::Right => {
+                        self.player.entity.x = hitbox.left() - self.player.entity.width as i32;
+                    }
                 }
             }
         }
@@ -270,7 +260,8 @@ impl Game {
             pos.and_then(|p| rect.and_then(|r| color_kinds.map(|c| (p, r, c))))
         })
         .for_each(|(pos, rect, color)| {
-            if self.player.entity.ecs_colides_with(&pos, &rect) {
+            let hitbox = rect.on_position(&pos);
+            if self.player.entity.colides_with(&hitbox) {
                 match color {
                     CoinKind::Color(color) => self.player.entity.color = color,
                     CoinKind::Jump(amount) => self.player.velocity.y = amount as i32,
@@ -284,8 +275,6 @@ impl Game {
     }
 
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
-        self.floor.draw(canvas)?;
-
         for (pos, rect, color) in izip!(self.ecs.positions(), self.ecs.rects(), self.ecs.colors())
             .filter_map(|(pos, rect, color)| {
                 pos.and_then(|p| rect.and_then(|r| color.map(|c| (p, r, c))))
