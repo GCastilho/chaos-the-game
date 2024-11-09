@@ -1,14 +1,4 @@
-use itertools::izip;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::Canvas;
-use sdl2::video::Window;
-use std::cell::RefMut;
-use std::cmp::Ordering::{Equal, Greater, Less};
-use std::ops::Index;
-use typed_builder::TypedBuilder;
-
-use crate::ecs::components::{CollisionAxis, Velocity};
+use crate::ecs::components::{CollisionAxis, Hitbox, Velocity};
 use crate::ecs::Entity;
 use crate::{
     ecs::{
@@ -17,6 +7,14 @@ use crate::{
     },
     keyboard::{Action, InputController, InputEvent},
 };
+use itertools::izip;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
+use std::cell::{RefCell, RefMut};
+use std::cmp::Ordering::{Equal, Greater, Less};
+use std::ops::Index;
 
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
 const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
@@ -24,27 +22,20 @@ const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
 const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
-#[derive(Debug, Clone, Copy, Default, TypedBuilder)]
-struct Coordinates {
-    x: i32,
-    y: i32,
-}
-
-struct NewPlayer<'a> {
-    position: RefMut<'a, Position>,
+struct Player<'a> {
+    position: &'a RefCell<Position>,
     velocity: RefMut<'a, Velocity>,
-    color: &'a Color,
+    color: &'a RefCell<Color>,
     rect: &'a Rectangle,
 }
 
-impl<'a> NewPlayer<'a> {
-    fn load(id: &crate::ecs::Entity, ecs: &'a Ecs) -> NewPlayer<'a> {
+impl<'a> Player<'a> {
+    fn load(id: &Entity, ecs: &'a Ecs) -> Player<'a> {
         let position = ecs
             .positions()
             .index(**id)
             .as_ref()
-            .expect("Player missing position")
-            .borrow_mut();
+            .expect("Player missing position");
         let velocity = ecs
             .velocities()
             .index(**id)
@@ -67,6 +58,10 @@ impl<'a> NewPlayer<'a> {
             color,
             rect,
         }
+    }
+
+    fn hitbox(&self) -> Hitbox {
+        self.rect.on_position(&self.position)
     }
 }
 
@@ -108,17 +103,17 @@ impl Game {
         ecs.create_entity()
             .with_rect(coin_rect)
             .with_position(Position { x: 120, y: 115 })
-            .with_coind_kind(CoinKind::Color(Color::MAGENTA));
+            .with_coin_kind(CoinKind::Color(Color::MAGENTA));
 
         ecs.create_entity()
             .with_rect(coin_rect)
             .with_position(Position { x: 470, y: 115 })
-            .with_coind_kind(CoinKind::Color(Color::RED));
+            .with_coin_kind(CoinKind::Color(Color::RED));
 
         ecs.create_entity()
             .with_rect(coin_rect)
             .with_position(Position { x: 300, y: 115 })
-            .with_coind_kind(CoinKind::Jump(20));
+            .with_coin_kind(CoinKind::Jump(20));
 
         Game {
             player_entity,
@@ -138,31 +133,11 @@ impl Game {
         self.gravitate();
         self.move_positions_by_velocity();
         self.handle_collisions();
-
-        // Service: handle player colision with coin
-        // izip!(
-        //     self.ecs.positions(),
-        //     self.ecs.rects(),
-        //     self.ecs.coin_kinds()
-        // )
-        // .filter_map(|(pos, rect, color_kinds)| {
-        //     pos.as_ref()
-        //         .map(|p| p.borrow_mut())
-        //         .and_then(|p| rect.and_then(|r| color_kinds.map(|c| (p, r, c))))
-        // })
-        // .for_each(|(pos, rect, color)| {
-        //     let hitbox = rect.on_position(pos);
-        //     if self.player.entity.colides_with(&hitbox) {
-        //         match color {
-        //             CoinKind::Color(color) => self.player.entity.color = color,
-        //             CoinKind::Jump(amount) => self.player.velocity.y = amount as i32,
-        //         }
-        //     }
-        // });
+        self.handle_coin_collisions();
     }
 
     fn handle_player_input(&mut self) {
-        let mut player = NewPlayer::load(&self.player_entity, &self.ecs);
+        let mut player = Player::load(&self.player_entity, &self.ecs);
 
         if self.inputs.state[Action::Left].is_active()
             && player.velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED
@@ -220,7 +195,7 @@ impl Game {
             self.ecs.solids(),
         )
         .filter_map(|(pos, recs, vel, solid)| {
-            pos.as_ref().map(|p| p.borrow_mut()).and_then(|p| {
+            pos.as_ref().and_then(|p| {
                 recs.and_then(|r| {
                     vel.as_ref()
                         .and_then(|v| solid.filter(|s| s.on_any()).map(|_| (p, r, v)))
@@ -235,11 +210,9 @@ impl Game {
                 .enumerate()
                 .filter(|(j, _)| i != *j)
                 .filter_map(|(_, (pos, rect, solid))| {
-                    solid.filter(|solid| solid.on_any()).and_then(|_| {
-                        pos.as_ref()
-                            .map(|p| p.borrow_mut())
-                            .and_then(|p| rect.map(|r| (p, r)))
-                    })
+                    solid
+                        .filter(|solid| solid.on_any())
+                        .and_then(|_| pos.as_ref().and_then(|p| rect.map(|r| (p, r))))
                 })
             {
                 let other_hitbox = rect.on_position(pos);
@@ -254,17 +227,17 @@ impl Game {
                     }
                     match axis {
                         CollisionAxis::Up => {
-                            moving_hitbox.pos.y =
+                            moving_hitbox.pos.borrow_mut().y =
                                 other_hitbox.bottom() - moving_hitbox.rect.height as i32;
                         }
                         CollisionAxis::Down => {
-                            moving_hitbox.pos.y = other_hitbox.top();
+                            moving_hitbox.pos.borrow_mut().y = other_hitbox.top();
                         }
                         CollisionAxis::Left => {
-                            moving_hitbox.pos.x = other_hitbox.right();
+                            moving_hitbox.pos.borrow_mut().x = other_hitbox.right();
                         }
                         CollisionAxis::Right => {
-                            moving_hitbox.pos.x =
+                            moving_hitbox.pos.borrow_mut().x =
                                 other_hitbox.left() - moving_hitbox.rect.width as i32;
                         }
                     }
@@ -273,15 +246,40 @@ impl Game {
         }
     }
 
+    fn handle_coin_collisions(&self) {
+        let mut player = Player::load(&self.player_entity, &self.ecs);
+
+        izip!(
+            self.ecs.positions(),
+            self.ecs.rects(),
+            self.ecs.coin_kinds()
+        )
+        .filter_map(|(pos, rect, color_kinds)| {
+            pos.as_ref()
+                .and_then(|p| rect.and_then(|r| color_kinds.as_ref().map(|c| (p, r, c))))
+        })
+        .for_each(|(pos, rect, color)| {
+            let hitbox = rect.on_position(pos);
+            if player.hitbox().colides_with(&hitbox) {
+                match color {
+                    CoinKind::Color(color) => {
+                        player.color.replace(*color);
+                    }
+                    CoinKind::Jump(amount) => player.velocity.y = *amount as i32,
+                }
+            }
+        });
+    }
+
     pub fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         for (pos, rect, color) in izip!(self.ecs.positions(), self.ecs.rects(), self.ecs.colors())
             .rev()
             .filter_map(|(pos, rect, color)| {
                 pos.as_ref()
-                    .and_then(|p| rect.and_then(|r| color.map(|c| (p, r, c))))
+                    .and_then(|p| rect.and_then(|r| color.as_ref().map(|c| (p, r, c.borrow()))))
             })
         {
-            canvas.set_draw_color(color);
+            canvas.set_draw_color(*color);
             let pos = pos.borrow();
             let square: Rect = Rect::new(
                 pos.x,

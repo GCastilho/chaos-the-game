@@ -1,7 +1,7 @@
 use enum_map::EnumMap;
 use sdl2::pixels::Color;
-use std::cell::RefMut;
-use std::cmp::Ordering::{Equal, Greater, Less};
+use std::cell::RefCell;
+use std::cmp::Ordering::*;
 
 // Os componentes não podem ter clone ou copy, ou um update irá atualizar a cópia, não a referência
 
@@ -51,7 +51,7 @@ impl Rectangle {
         Self { width, height }
     }
 
-    pub fn on_position<'a>(&'a self, position: RefMut<'a, Position>) -> Hitbox<'a> {
+    pub fn on_position<'a>(&'a self, position: &'a RefCell<Position>) -> Hitbox<'a> {
         Hitbox {
             pos: position,
             rect: self,
@@ -59,7 +59,7 @@ impl Rectangle {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub enum CollisionAxis {
     Up,
     Down,
@@ -69,25 +69,25 @@ pub enum CollisionAxis {
 
 #[derive(Debug)]
 pub struct Hitbox<'a> {
-    pub pos: RefMut<'a, Position>,
+    pub pos: &'a RefCell<Position>,
     pub rect: &'a Rectangle,
 }
 
 impl<'a> Hitbox<'a> {
     pub fn left(&self) -> i32 {
-        self.pos.x
+        self.pos.borrow().x
     }
 
     pub fn right(&self) -> i32 {
-        self.pos.x + self.rect.width as i32
+        self.pos.borrow().x + self.rect.width as i32
     }
 
     pub fn top(&self) -> i32 {
-        self.pos.y + self.rect.height as i32
+        self.pos.borrow().y + self.rect.height as i32
     }
 
     pub fn bottom(&self) -> i32 {
-        self.pos.y
+        self.pos.borrow().y
     }
 
     pub fn colides_with(&self, other: &'a Hitbox<'a>) -> bool {
@@ -101,7 +101,6 @@ impl<'a> Hitbox<'a> {
         if !self.colides_with(other) {
             return None;
         }
-        use std::cmp::Ordering::*;
 
         let y_up = self.top() - other.bottom();
         let y_down = other.top() - self.bottom();
@@ -126,7 +125,7 @@ impl<'a> Hitbox<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub enum CoinKind {
     Color(Color),
     Jump(u32),

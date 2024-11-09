@@ -21,7 +21,7 @@ pub struct Ecs {
     positions: Vec<Option<RefCell<Position>>>,
     velocities: Vec<Option<RefCell<Velocity>>>,
     rects: Vec<Option<Rectangle>>,
-    colors: Vec<Option<Color>>,
+    colors: Vec<Option<RefCell<Color>>>,
     coin_kinds: Vec<Option<CoinKind>>,
     solids: Vec<Option<Solid>>,
 }
@@ -68,7 +68,9 @@ impl Ecs {
     }
 
     pub fn with_color(&mut self, color: Color) -> &mut Self {
-        self.colors.last_mut().and_then(|last| last.replace(color));
+        self.colors
+            .last_mut()
+            .and_then(|last| last.replace(RefCell::new(color)));
         self
     }
 
@@ -77,16 +79,16 @@ impl Ecs {
         self
     }
 
-    pub fn with_coind_kind(&mut self, coin_kind: CoinKind) -> &mut Self {
-        self.coin_kinds
-            .last_mut()
-            .and_then(|last| last.replace(coin_kind));
+    pub fn with_coin_kind(&mut self, coin_kind: CoinKind) -> &mut Self {
         self.colors
             .last_mut()
             .and_then(|last_color| match coin_kind {
-                CoinKind::Color(color) => last_color.replace(color),
-                CoinKind::Jump(_) => last_color.replace(Color::CYAN),
+                CoinKind::Color(color) => last_color.replace(RefCell::new(color)),
+                CoinKind::Jump(_) => last_color.replace(RefCell::new(Color::CYAN)),
             });
+        self.coin_kinds
+            .last_mut()
+            .and_then(|last| last.replace(coin_kind));
         self
     }
 
@@ -106,7 +108,7 @@ impl Ecs {
         &self.rects
     }
 
-    pub fn colors(&self) -> &[Option<Color>] {
+    pub fn colors(&self) -> &[Option<RefCell<Color>>] {
         &self.colors
     }
 
