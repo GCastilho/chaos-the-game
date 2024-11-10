@@ -9,8 +9,8 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use std::time::Duration;
 
-const SCREEN_WIDTH: u32 = 800;
-const SCREEN_HEIGHT: u32 = 600;
+const SCREEN_WIDTH: u32 = 2000;
+const SCREEN_HEIGHT: u32 = 1200;
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init().expect("Could not init SDL");
@@ -20,8 +20,8 @@ fn main() -> Result<(), String> {
 
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
-        // .position_centered()
-        .position(2200, 100)
+        .position_centered()
+        // .position(200, 100)
         .build()
         .expect("Failed to build main window");
 
@@ -54,6 +54,12 @@ fn main() -> Result<(), String> {
                         println!("{input_event:?}");
                         game.handle_keypress(input_event);
                     }
+                }
+                Event::MouseButtonDown { x, y, .. } => {
+                    game.handle_mousepress(x, canvas.window().size().1 as i32 - y);
+                }
+                Event::MouseButtonUp { x, y, .. } => {
+                    game.handle_mouselift(x as i32,canvas.window().size().1 as i32 - y);
                 }
                 Event::MouseMotion { x, y, .. } => {
                     println!("motion: ({x},{y})");

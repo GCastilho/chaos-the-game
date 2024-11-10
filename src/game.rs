@@ -65,10 +65,27 @@ impl<'a> Player<'a> {
     }
 }
 
+#[derive(Debug, Default)]
+struct MouseCommand{
+    x1: i32,
+    x2: i32,
+    y1: i32,
+    y2: i32,
+    init: bool,
+}
+#[derive(Debug, Default)]
+struct GameState{
+    time_since_jump_pressed: i32,
+    max_jump_time: i32,
+    can_jump: bool,
+}
+
 pub struct Game {
     player_entity: Entity,
     inputs: InputController,
     ecs: Ecs,
+    mouse_command: MouseCommand,
+    game_state: GameState,
 }
 
 impl Game {
@@ -119,11 +136,48 @@ impl Game {
             player_entity,
             ecs,
             inputs: input_controller,
+            mouse_command: MouseCommand::default(),
+            game_state: GameState { max_jump_time: 30, ..Default::default() },
         }
     }
 
     pub fn handle_keypress(&mut self, input_event: InputEvent) {
         self.inputs.handle_input_event(input_event);
+    }
+
+    pub fn handle_mousepress(&mut self, x:i32, y:i32) {
+        // if !self.mouse_command.init {
+            self.mouse_command.x1 = x;
+            self.mouse_command.y1 = y;
+            self.mouse_command.init = true;
+        // }
+    }
+    pub fn handle_mouselift(&mut self, x:i32, y:i32) {
+        // if self.mouse_command.init {
+            self.mouse_command.x2 = x;
+            self.mouse_command.y2 = y;
+
+
+            let minx = std::cmp::min(self.mouse_command.x2, self.mouse_command.x1);
+            let miny = std::cmp::min(self.mouse_command.y2, self.mouse_command.y1);
+
+            let maxx = std::cmp::max(self.mouse_command.x2, self.mouse_command.x1);
+            let maxy = std::cmp::max(self.mouse_command.y2, self.mouse_command.y1);
+
+            // if (maxx - minx) < 10 && (maxy - miny) < 10{
+
+                self.ecs.create_entity()
+                .with_position(Position { x: minx, y: miny })
+                .with_rect(Rectangle {
+                    height: (maxy - miny) as u32,
+                    width: (maxx - minx) as u32,
+                })
+                .with_color(Color::CYAN).with_solids(Solid::all());
+                    
+            // } 
+        // }
+        self.mouse_command.init = false;
+        
     }
 
     pub fn update(&mut self) {
@@ -137,6 +191,7 @@ impl Game {
     }
 
     fn handle_player_input(&mut self) {
+
         let mut player = Player::load(&self.player_entity, &self.ecs);
 
         if self.inputs.state[Action::Left].is_active()
@@ -162,8 +217,21 @@ impl Game {
         if self.inputs.state[Action::Down].is_active() {
             player.velocity.y = -10
         } else if self.inputs.state[Action::Up].is_active() {
-            player.velocity.y = 10
+            if self.game_state.can_jump {
+                if self.game_state.time_since_jump_pressed > self.game_state.max_jump_time 
+                {
+                    self.game_state.can_jump = false;
+                    self.game_state.time_since_jump_pressed += 1
+                }
+                player.velocity.y = 14 - (self.game_state.time_since_jump_pressed /3) ;
+                self.game_state.time_since_jump_pressed += 1;
+            }
+        }else{
+            self.game_state.time_since_jump_pressed = 0;
+            self.game_state.can_jump =  false;
         }
+
+
     }
 
     fn gravitate(&mut self) {
@@ -187,7 +255,7 @@ impl Game {
             position.y += velocity.y;
         }
     }
-    fn handle_collisions(&self) {
+    fn handle_collisions(&mut self) {
         for (i, (pos, recs, vel)) in izip!(
             self.ecs.positions(),
             self.ecs.rects(),
@@ -229,9 +297,11 @@ impl Game {
                         CollisionAxis::Up => {
                             moving_hitbox.pos.borrow_mut().y =
                                 other_hitbox.bottom() - moving_hitbox.rect.height as i32;
+                            self.game_state.can_jump = false;
                         }
                         CollisionAxis::Down => {
                             moving_hitbox.pos.borrow_mut().y = other_hitbox.top();
+                            self.game_state.can_jump = true;
                         }
                         CollisionAxis::Left => {
                             moving_hitbox.pos.borrow_mut().x = other_hitbox.right();
