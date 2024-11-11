@@ -1,11 +1,14 @@
+use bevy_ecs::prelude::Component;
 use enum_map::EnumMap;
 use sdl2::pixels::Color;
 use std::cell::RefCell;
 use std::cmp::Ordering::*;
-
 // Os componentes não podem ter clone ou copy, ou um update irá atualizar a cópia, não a referência
 
-#[derive(Debug)]
+#[derive(Component)]
+pub struct Player;
+
+#[derive(Debug, Component)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -17,7 +20,7 @@ impl Position {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub struct Velocity {
     pub gravitable: bool,
     pub x: i32,
@@ -40,7 +43,7 @@ impl Default for Velocity {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Component)]
 pub struct Rectangle {
     pub width: u32,
     pub height: u32,
