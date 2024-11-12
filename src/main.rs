@@ -2,18 +2,16 @@ mod ecs;
 mod game;
 mod keyboard;
 
-use crate::ecs::draw_systems::{draw, Render};
-use crate::ecs::startup_systems::{init_player_system, Startup};
-use crate::game::Game;
-use bevy_ecs::prelude::Schedule;
-use bevy_ecs::world::World;
-use keyboard::InputEvent;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use std::rc::Rc;
-use std::sync::Mutex;
-use std::time::Duration;
+use bevy_ecs::{event::Events, prelude::Schedule, world::World};
+use ecs::{
+    draw_systems::{draw, Render},
+    input::{update_input_state, InputEvent, InputState},
+    startup_systems::{init_player_system, Startup},
+    Update,
+};
+use game::Game;
+use sdl2::{event::Event, keyboard::Keycode, pixels::Color};
+use std::{rc::Rc, sync::Mutex, time::Duration};
 
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
@@ -27,7 +25,7 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        .position(-900, 350)
+        // .position(-900, 350)
         .build()
         .expect("Failed to build main window");
 
@@ -46,13 +44,19 @@ fn main() -> Result<(), String> {
     let canvas = Rc::new(Mutex::new(canvas));
 
     world.insert_non_send_resource(canvas.clone());
+    world.insert_resource(InputState::default());
+    world.insert_resource(Events::<InputEvent>::default());
 
     Schedule::new(Startup)
         .add_systems(init_player_system)
         .run(&mut world);
 
-    let mut render_scheduler = Schedule::new(Render);
+    // TODO: Struct com todos os schedulers que roda todos automaticamente
+    // E permite adicionar sistemas usando o nome do  scheduler
+    let mut update_scheduler = Schedule::new(Update);
+    update_scheduler.add_systems(update_input_state);
 
+    let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);
 
     let mut event_pump = sdl_context
@@ -72,20 +76,20 @@ fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyDown { .. } | Event::KeyUp { .. } => {
-                    if let Ok(input_event) = InputEvent::try_from(event) {
-                        println!("{input_event:?}");
+                Event::KeyDown { repeat: false, .. } | Event::KeyUp { repeat: false, .. } => {
+                    if let Ok(input_event) = keyboard::InputEvent::try_from(event.clone()) {
                         game.handle_keypress(input_event);
+                    }
+                    if let Ok(input_event) = InputEvent::try_from(event) {
+                        println!("{:?}", input_event);
+                        world.resource_mut::<Events<InputEvent>>().send(input_event);
                     }
                 }
                 Event::MouseButtonDown { x, y, .. } => {
                     game.handle_mousepress(x, canvas.lock().unwrap().window().size().1 as i32 - y);
                 }
                 Event::MouseButtonUp { x, y, .. } => {
-                    game.handle_mouselift(
-                        x as i32,
-                        canvas.lock().unwrap().window().size().1 as i32 - y,
-                    );
+                    game.handle_mouselift(x, canvas.lock().unwrap().window().size().1 as i32 - y);
                 }
                 Event::MouseMotion { x, y, .. } => {
                     println!("motion: ({x},{y})");
@@ -96,6 +100,7 @@ fn main() -> Result<(), String> {
 
         game.update();
         game.draw(&mut canvas.lock().unwrap())?;
+        update_scheduler.run(&mut world);
         render_scheduler.run(&mut world);
 
         canvas.lock().unwrap().present();

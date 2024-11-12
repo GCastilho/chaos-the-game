@@ -1,4 +1,5 @@
 use crate::ecs::components::Velocity;
+use bevy_ecs::schedule::ScheduleLabel;
 use components::{CoinKind, Position, Rectangle, Solid};
 use sdl2::pixels::Color;
 use std::cell::RefCell;
@@ -6,7 +7,11 @@ use std::ops::Deref;
 
 pub mod components;
 pub mod draw_systems;
+pub mod input;
 pub mod startup_systems;
+
+#[derive(Debug, ScheduleLabel, Clone, Eq, Hash, PartialEq)]
+pub struct Update;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Entity(usize);
