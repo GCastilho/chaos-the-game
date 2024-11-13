@@ -2,10 +2,11 @@ mod ecs;
 mod game;
 mod keyboard;
 
-use bevy_ecs::{event::Events, prelude::Schedule, world::World};
+use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use ecs::{
     draw_systems::{draw, Render},
     input::{update_input_state, InputEvent, InputState},
+    physics_systems::{gravitate, handle_collision_moving_static, move_system},
     startup_systems::{init_player_system, Startup},
     Update,
 };
@@ -54,7 +55,9 @@ fn main() -> Result<(), String> {
     // TODO: Struct com todos os schedulers que roda todos automaticamente
     // E permite adicionar sistemas usando o nome do  scheduler
     let mut update_scheduler = Schedule::new(Update);
-    update_scheduler.add_systems(update_input_state);
+    update_scheduler
+        .add_systems(update_input_state)
+        .add_systems((gravitate, move_system, handle_collision_moving_static).chain());
 
     let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);

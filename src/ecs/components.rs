@@ -142,7 +142,7 @@ pub enum SolidSides {
     Right,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Component)]
 pub struct Solid {
     sides: EnumMap<SolidSides, bool>,
 }
