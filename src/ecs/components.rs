@@ -1,8 +1,8 @@
 use bevy_ecs::prelude::Component;
 use enum_map::EnumMap;
-use sdl2::pixels::Color;
 use std::cell::RefCell;
 use std::cmp::Ordering::*;
+use std::ops::Deref;
 // Os componentes não podem ter clone ou copy, ou um update irá atualizar a cópia, não a referência
 
 #[derive(Component)]
@@ -128,9 +128,30 @@ impl<'a> Hitbox<'a> {
     }
 }
 
+pub trait Componentable {
+    fn into_component(self) -> impl Component + 'static;
+}
+
+impl Componentable for sdl2::pixels::Color {
+    fn into_component(self) -> impl Component + 'static {
+        Color(self)
+    }
+}
+
+#[derive(Debug, Component)]
+pub struct Color(pub sdl2::pixels::Color);
+
+impl Deref for Color {
+    type Target = sdl2::pixels::Color;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Debug)]
 pub enum CoinKind {
-    Color(Color),
+    Color(sdl2::pixels::Color),
     Jump(u32),
 }
 
