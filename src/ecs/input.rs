@@ -1,8 +1,18 @@
+use crate::ecs::components::{Player, Velocity};
 use bevy_ecs::event::EventReader;
-use bevy_ecs::system::{ResMut, Resource};
+use bevy_ecs::prelude::Query;
+use bevy_ecs::query::With;
+use bevy_ecs::system::{Res, ResMut, Resource};
 use enum_map::EnumMap;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use std::cmp::Ordering::{Equal, Greater, Less};
+
+const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
+const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
+
+const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
+const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
 #[derive(Debug, Default, Copy, Clone)]
 pub enum ActionState {
@@ -96,5 +106,32 @@ pub fn update_input_state(
 ) {
     for ev in ev_input.read() {
         input_state.state[ev.action] = ev.state;
+    }
+}
+
+pub fn handle_player_input(mut query: Query<&mut Velocity, With<Player>>, inputs: Res<InputState>) {
+    for mut velocity in query.iter_mut() {
+        if inputs.state[Action::Left].active() && velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
+            velocity.x -= PLAYER_HORIZONTAL_ACCELERATION;
+        }
+        if inputs.state[Action::Right].active() && velocity.x <= PLAYER_MAX_HORIZONTAL_SPEED {
+            velocity.x += PLAYER_HORIZONTAL_ACCELERATION;
+        }
+
+        if !inputs.state[Action::Left].active() && !inputs.state[Action::Right].active() {
+            match velocity.x.cmp(&0) {
+                Less => velocity.x += PLAYER_HORIZONTAL_ACCELERATION,
+                Greater => velocity.x -= PLAYER_HORIZONTAL_ACCELERATION,
+                Equal => (),
+            }
+        }
+
+        if inputs.state[Action::Up].active() && velocity.y <= PLAYER_MAX_VERTICAL_SPEED {
+            velocity.y += 10;
+        }
+
+        if inputs.state[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
+            velocity.y -= 10;
+        }
     }
 }

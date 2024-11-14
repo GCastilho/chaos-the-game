@@ -2,6 +2,7 @@ mod ecs;
 mod game;
 mod keyboard;
 
+use crate::ecs::input::handle_player_input;
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use ecs::{
     draw_systems::{draw, Render},
@@ -26,7 +27,7 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        // .position(-900, 350)
+        .position(-900, 350)
         .build()
         .expect("Failed to build main window");
 
@@ -56,8 +57,12 @@ fn main() -> Result<(), String> {
     // E permite adicionar sistemas usando o nome do  scheduler
     let mut update_scheduler = Schedule::new(Update);
     update_scheduler
-        .add_systems(update_input_state)
-        .add_systems((gravitate, move_system, handle_collision_moving_static).chain());
+        .add_systems((update_input_state, handle_player_input).chain())
+        .add_systems(
+            (gravitate, move_system, handle_collision_moving_static)
+                .chain()
+                .after(update_input_state),
+        );
 
     let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);
