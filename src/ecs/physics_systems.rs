@@ -1,4 +1,5 @@
 use super::components::{CollisionAxis, Position, Rectangle, Solid, Velocity};
+use crate::ecs::player::Jump;
 use bevy_ecs::prelude::Query;
 use bevy_ecs::query::{With, Without};
 use bevy_ecs::world::Mut;
@@ -83,10 +84,10 @@ impl<'a> Hitbox<'a> {
 /// mto puto. Fazer numa query só não dá porque nem tudo tem velocidade e tentar fazer uma sub-query
 /// usando Query::transmute_lens_filtered também deixa o borrow checker puto
 pub fn handle_collision_moving_static(
-    mut query_moving: Query<(&mut Position, &Rectangle, &mut Velocity), With<Solid>>,
+    mut query_moving: Query<(&mut Position, &Rectangle, &mut Velocity, &mut Jump), With<Solid>>,
     mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
-    for (mut pos, rec, mut vel) in query_moving.iter_mut() {
+    for (mut pos, rec, mut vel, mut jump) in query_moving.iter_mut() {
         let mut hitbox = rec.on_position_bevy(pos.reborrow());
         for (mut pos, rec) in query_static.iter_mut() {
             let static_hitbox = rec.on_position_bevy(pos.reborrow());
@@ -99,6 +100,7 @@ pub fn handle_collision_moving_static(
                     CollisionAxis::Down => {
                         vel.y = 0;
                         hitbox.pos.y = static_hitbox.top();
+                        jump.grounded = true;
                     }
                     CollisionAxis::Left => {
                         vel.x = 0;

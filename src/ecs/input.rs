@@ -1,4 +1,5 @@
 use crate::ecs::components::{Player, Velocity};
+use crate::ecs::player::Jump;
 use bevy_ecs::event::EventReader;
 use bevy_ecs::prelude::Query;
 use bevy_ecs::query::With;
@@ -14,7 +15,7 @@ const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
 const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 pub enum ActionState {
     #[default]
     Inactive,
@@ -109,8 +110,11 @@ pub fn update_input_state(
     }
 }
 
-pub fn handle_player_input(mut query: Query<&mut Velocity, With<Player>>, inputs: Res<InputState>) {
-    for mut velocity in query.iter_mut() {
+pub fn handle_player_input(
+    mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
+    inputs: Res<InputState>,
+) {
+    for (mut velocity, mut jump) in query.iter_mut() {
         if inputs.state[Action::Left].active() && velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
             velocity.x -= PLAYER_HORIZONTAL_ACCELERATION;
         }
@@ -127,7 +131,9 @@ pub fn handle_player_input(mut query: Query<&mut Velocity, With<Player>>, inputs
         }
 
         if inputs.state[Action::Up].active() && velocity.y <= PLAYER_MAX_VERTICAL_SPEED {
-            velocity.y += 10;
+            jump.do_jump(&mut velocity);
+        } else {
+            jump.clear_jump()
         }
 
         if inputs.state[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {

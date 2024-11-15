@@ -1,4 +1,7 @@
-use super::components::{CoinKind, Componentable, Player, Position, Rectangle, Solid, Velocity};
+use super::{
+    components::{CoinKind, Componentable, Player, Position, Rectangle, Solid, Velocity},
+    player::Jump,
+};
 use bevy_ecs::schedule::ScheduleLabel;
 use bevy_ecs::system::Commands;
 use sdl2::pixels::Color;
@@ -14,6 +17,7 @@ pub fn init_player_system(mut commands: Commands) {
         Velocity::default(),
         Color::BLUE.into_component(),
         Solid::all(),
+        Jump::default(),
     ));
 
     // TODO: Chão não ser inicializado aqui
