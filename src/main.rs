@@ -3,6 +3,7 @@ mod game;
 mod keyboard;
 
 use crate::ecs::input::handle_player_input;
+use crate::ecs::player::player_collides_coin;
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use ecs::{
     draw_systems::{draw, Render},
@@ -62,7 +63,8 @@ fn main() -> Result<(), String> {
             (gravitate, move_system, handle_collision_moving_static)
                 .chain()
                 .after(update_input_state),
-        );
+        )
+        .add_systems(player_collides_coin);
 
     let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);

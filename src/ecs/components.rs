@@ -149,7 +149,7 @@ impl Deref for Color {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub enum CoinKind {
     Color(sdl2::pixels::Color),
     Jump(u32),

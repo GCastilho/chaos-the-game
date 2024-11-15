@@ -7,7 +7,7 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
 // Trait temporária pra poder implementar método no rect do outro módulo
-trait ToHitbox {
+pub trait ToHitbox {
     fn on_position_bevy<'a>(&'a self, position: Mut<'a, Position>) -> Hitbox<'a>;
 }
 
@@ -20,7 +20,7 @@ impl ToHitbox for Rectangle {
     }
 }
 
-struct Hitbox<'a> {
+pub struct Hitbox<'a> {
     pos: Mut<'a, Position>,
     rect: &'a Rectangle,
 }
