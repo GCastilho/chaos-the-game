@@ -1,5 +1,5 @@
-use crate::ecs::components::{Componentable, Player, Position, Rectangle, Solid, Velocity};
-use crate::ecs::player::Jump;
+use crate::game::components::{Componentable, Player, Position, Rectangle, Solid, Velocity};
+use crate::game::player::Jump;
 use bevy_ecs::event::{EventReader, EventWriter, Events};
 use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::query::With;

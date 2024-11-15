@@ -22,7 +22,7 @@ pub fn init_player_system(mut commands: Commands) {
 
     // TODO: Chão não ser inicializado aqui
     commands.spawn((
-        Position::new(100, 150),
+        Position::new(100, 100),
         Rectangle::new(400, 10),
         Color::GREEN.into_component(),
         Solid::all(),
@@ -35,19 +35,19 @@ pub fn init_player_system(mut commands: Commands) {
 
     // TODO: Coins não serem inicializadas aqui
     commands.spawn((
-        Position::new(120, 165),
+        Position::new(120, 115),
         coin_rect,
         CoinKind::Color(Color::MAGENTA),
         Color::MAGENTA.into_component(), // pra cor entrar junto com kind tem q ser um bundle
     ));
     commands.spawn((
-        Position::new(470, 165),
+        Position::new(470, 115),
         coin_rect,
         CoinKind::Color(Color::RED),
         Color::RED.into_component(),
     ));
     commands.spawn((
-        Position::new(300, 165),
+        Position::new(300, 115),
         coin_rect,
         CoinKind::Jump(20),
         Color::CYAN.into_component(),

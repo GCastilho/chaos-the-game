@@ -1,82 +1,9 @@
 use super::components::{CollisionAxis, Position, Rectangle, Solid, Velocity};
-use crate::ecs::player::Jump;
+use crate::game::player::Jump;
 use bevy_ecs::prelude::Query;
 use bevy_ecs::query::{With, Without};
-use bevy_ecs::world::Mut;
-use std::cmp::Ordering::{Equal, Greater, Less};
 
 const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
-
-// Trait temporária pra poder implementar método no rect do outro módulo
-pub trait ToHitbox {
-    fn on_position_bevy<'a>(&'a self, position: Mut<'a, Position>) -> Hitbox<'a>;
-}
-
-impl ToHitbox for Rectangle {
-    fn on_position_bevy<'a>(&'a self, position: Mut<'a, Position>) -> Hitbox<'a> {
-        Hitbox {
-            rect: self,
-            pos: position,
-        }
-    }
-}
-
-pub struct Hitbox<'a> {
-    pos: Mut<'a, Position>,
-    rect: &'a Rectangle,
-}
-
-impl<'a> Hitbox<'a> {
-    pub fn left(&self) -> i32 {
-        self.pos.x
-    }
-
-    pub fn right(&self) -> i32 {
-        self.pos.x + self.rect.width as i32
-    }
-
-    pub fn top(&self) -> i32 {
-        self.pos.y + self.rect.height as i32
-    }
-
-    pub fn bottom(&self) -> i32 {
-        self.pos.y
-    }
-
-    pub fn colides_with(&self, other: &'a Hitbox<'a>) -> bool {
-        self.left() < other.right()
-            && self.right() > other.left()
-            && self.bottom() < other.top()
-            && self.top() > other.bottom()
-    }
-
-    pub fn colides_with_axis(&self, other: &Hitbox) -> Option<CollisionAxis> {
-        if !self.colides_with(other) {
-            return None;
-        }
-
-        let y_up = self.top() - other.bottom();
-        let y_down = other.top() - self.bottom();
-        let x_right = self.right() - other.left();
-        let x_left = other.right() - self.left();
-
-        let (y_axis, y_value) = match y_up.cmp(&y_down) {
-            Greater | Equal => (CollisionAxis::Down, y_down),
-            Less => (CollisionAxis::Up, y_up),
-        };
-
-        let (x_axis, x_value) = match x_left.cmp(&x_right) {
-            Greater | Equal => (CollisionAxis::Right, x_right),
-            Less => (CollisionAxis::Left, x_left),
-        };
-
-        match y_value.cmp(&x_value) {
-            Greater => Some(x_axis),
-            Less => Some(y_axis),
-            Equal => None,
-        }
-    }
-}
 
 /// Colisão entre coisas com e sem velocidade.
 ///
@@ -88,9 +15,9 @@ pub fn handle_collision_moving_static(
     mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
     for (mut pos, rec, mut vel, mut jump) in query_moving.iter_mut() {
-        let mut hitbox = rec.on_position_bevy(pos.reborrow());
+        let mut hitbox = rec.on_position(pos.reborrow());
         for (mut pos, rec) in query_static.iter_mut() {
-            let static_hitbox = rec.on_position_bevy(pos.reborrow());
+            let static_hitbox = rec.on_position(pos.reborrow());
             if let Some(axis) = hitbox.colides_with_axis(&static_hitbox) {
                 match axis {
                     CollisionAxis::Up => {

@@ -1,7 +1,4 @@
-use crate::ecs::{
-    components::{CoinKind, Color, Player, Position, Rectangle, Velocity},
-    physics_systems::ToHitbox,
-};
+use crate::game::components::{CoinKind, Color, Player, Position, Rectangle, Velocity};
 use bevy_ecs::query::Without;
 use bevy_ecs::{
     prelude::{Component, Query},
@@ -13,9 +10,9 @@ pub fn player_collides_coin(
     mut coins: Query<(&CoinKind, &mut Position, &Rectangle), Without<Player>>,
 ) {
     let (mut player_color, mut pos, rect, mut vel) = player.single_mut();
-    let player_hitbox = rect.on_position_bevy(pos.reborrow());
+    let player_hitbox = rect.on_position(pos.reborrow());
     for (kind, mut pos, rect) in coins.iter_mut() {
-        let hitbox = rect.on_position_bevy(pos.reborrow());
+        let hitbox = rect.on_position(pos.reborrow());
         if player_hitbox.colides_with(&hitbox) {
             match kind {
                 CoinKind::Color(color) => player_color.0 = color.clone(),

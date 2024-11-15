@@ -1,21 +1,18 @@
-mod ecs;
 mod game;
-mod keyboard;
 
-use crate::ecs::input::{
+use crate::game::input::{
     handle_mouse, handle_player_input, insert_mouse_resources, insert_mouse_square, MouseLift,
     MousePress,
 };
-use crate::ecs::player::{player_collides_coin, update_jump_time};
+use crate::game::player::{player_collides_coin, update_jump_time};
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
-use ecs::{
+use game::{
     draw_systems::{draw, Render},
     input::{update_input_state, InputEvent, InputState},
     physics_systems::{gravitate, handle_collision_moving_static, move_system},
     startup_systems::{init_player_system, Startup},
     Update,
 };
-use game::Game;
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color};
 use std::{rc::Rc, sync::Mutex, time::Duration};
 
@@ -43,10 +40,9 @@ fn main() -> Result<(), String> {
     canvas.clear();
     canvas.present();
 
-    let mut game = Game::new();
     let mut world = World::new();
 
-    // TODO: Canvas está temporariamente num mutex até finalização da migração para o bevy_ecs
+    // TODO: Tentar tirar canvas de um mutex
     let canvas = Rc::new(Mutex::new(canvas));
 
     world.insert_non_send_resource(canvas.clone());
@@ -93,16 +89,12 @@ fn main() -> Result<(), String> {
                     ..
                 } => break 'running,
                 Event::KeyDown { repeat: false, .. } | Event::KeyUp { repeat: false, .. } => {
-                    if let Ok(input_event) = keyboard::InputEvent::try_from(event.clone()) {
-                        game.handle_keypress(input_event);
-                    }
                     if let Ok(input_event) = InputEvent::try_from(event) {
                         println!("{:?}", input_event);
                         world.resource_mut::<Events<InputEvent>>().send(input_event);
                     }
                 }
                 Event::MouseButtonDown { x, y, .. } => {
-                    game.handle_mousepress(x, canvas.lock().unwrap().window().size().1 as i32 - y);
                     world
                         .resource_mut::<Events<MousePress>>()
                         .send(MousePress::new(
@@ -111,7 +103,6 @@ fn main() -> Result<(), String> {
                         ));
                 }
                 Event::MouseButtonUp { x, y, .. } => {
-                    game.handle_mouselift(x, canvas.lock().unwrap().window().size().1 as i32 - y);
                     world
                         .resource_mut::<Events<MouseLift>>()
                         .send(MouseLift::new(
@@ -126,8 +117,6 @@ fn main() -> Result<(), String> {
             }
         }
 
-        game.update();
-        game.draw(&mut canvas.lock().unwrap())?;
         update_scheduler.run(&mut world);
         render_scheduler.run(&mut world);
 

@@ -1,9 +1,8 @@
+use bevy_ecs::change_detection::Mut;
 use bevy_ecs::prelude::Component;
 use enum_map::EnumMap;
-use std::cell::RefCell;
 use std::cmp::Ordering::*;
 use std::ops::Deref;
-// Os componentes não podem ter clone ou copy, ou um update irá atualizar a cópia, não a referência
 
 #[derive(Component)]
 pub struct Player;
@@ -20,27 +19,10 @@ impl Position {
     }
 }
 
-#[derive(Debug, Component)]
+#[derive(Debug, Default, Component)]
 pub struct Velocity {
-    pub gravitable: bool,
     pub x: i32,
     pub y: i32,
-}
-
-impl Velocity {
-    pub fn new_gravitable(x: i32, y: i32) -> Self {
-        Self {
-            gravitable: true,
-            x,
-            y,
-        }
-    }
-}
-
-impl Default for Velocity {
-    fn default() -> Self {
-        Self::new_gravitable(0, 0)
-    }
 }
 
 #[derive(Debug, Clone, Copy, Component)]
@@ -54,10 +36,10 @@ impl Rectangle {
         Self { width, height }
     }
 
-    pub fn on_position<'a>(&'a self, position: &'a RefCell<Position>) -> Hitbox<'a> {
+    pub fn on_position<'a>(&'a self, position: Mut<'a, Position>) -> Hitbox<'a> {
         Hitbox {
-            pos: position,
             rect: self,
+            pos: position,
         }
     }
 }
@@ -70,27 +52,26 @@ pub enum CollisionAxis {
     Right,
 }
 
-#[derive(Debug)]
 pub struct Hitbox<'a> {
-    pub pos: &'a RefCell<Position>,
+    pub pos: Mut<'a, Position>,
     pub rect: &'a Rectangle,
 }
 
 impl<'a> Hitbox<'a> {
     pub fn left(&self) -> i32 {
-        self.pos.borrow().x
+        self.pos.x
     }
 
     pub fn right(&self) -> i32 {
-        self.pos.borrow().x + self.rect.width as i32
+        self.pos.x + self.rect.width as i32
     }
 
     pub fn top(&self) -> i32 {
-        self.pos.borrow().y + self.rect.height as i32
+        self.pos.y + self.rect.height as i32
     }
 
     pub fn bottom(&self) -> i32 {
-        self.pos.borrow().y
+        self.pos.y
     }
 
     pub fn colides_with(&self, other: &'a Hitbox<'a>) -> bool {
