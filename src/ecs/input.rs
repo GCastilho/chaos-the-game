@@ -1,13 +1,16 @@
-use crate::ecs::components::{Player, Velocity};
+use crate::ecs::components::{Componentable, Player, Position, Rectangle, Solid, Velocity};
 use crate::ecs::player::Jump;
-use bevy_ecs::event::EventReader;
-use bevy_ecs::prelude::Query;
+use bevy_ecs::event::{EventReader, EventWriter, Events};
+use bevy_ecs::prelude::{Commands, Query};
 use bevy_ecs::query::With;
-use bevy_ecs::system::{Res, ResMut, Resource};
+use bevy_ecs::system::{Local, Res, ResMut, Resource};
+use bevy_ecs::world::World;
 use enum_map::EnumMap;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::pixels::Color;
 use std::cmp::Ordering::{Equal, Greater, Less};
+use std::cmp::{max, min};
 
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
 const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
@@ -139,5 +142,74 @@ pub fn handle_player_input(
         if inputs.state[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
             velocity.y -= 10;
         }
+    }
+}
+
+#[derive(Debug, bevy_ecs::event::Event, Copy, Clone)]
+pub struct MousePress {
+    x: i32,
+    y: i32,
+}
+
+impl MousePress {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Debug, bevy_ecs::event::Event, Copy, Clone)]
+pub struct MouseLift {
+    x: i32,
+    y: i32,
+}
+
+impl MouseLift {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Debug, bevy_ecs::event::Event)]
+pub struct MouseCommand {
+    pub press: MousePress,
+    pub lift: MouseLift,
+}
+
+pub fn handle_mouse(
+    mut last_press: Local<Option<MousePress>>,
+    mut ev_pressed: EventReader<MousePress>,
+    mut ev_lift: EventReader<MouseLift>,
+    mut mouse_command: EventWriter<MouseCommand>,
+) {
+    for press in ev_pressed.read() {
+        last_press.replace(*press);
+    }
+    for lift in ev_lift.read() {
+        if let Some(press) = last_press.take() {
+            mouse_command.send(MouseCommand { press, lift: *lift });
+        }
+    }
+}
+
+pub fn insert_mouse_resources(world: &mut World) {
+    world.insert_resource(Events::<MousePress>::default());
+    world.insert_resource(Events::<MouseLift>::default());
+    world.insert_resource(Events::<MouseCommand>::default());
+}
+
+pub fn insert_mouse_square(mut mouse_commands: EventReader<MouseCommand>, mut commands: Commands) {
+    for mouse_command in mouse_commands.read() {
+        let min_x = min(mouse_command.lift.x, mouse_command.press.x);
+        let min_y = min(mouse_command.lift.y, mouse_command.press.y);
+
+        let max_x = max(mouse_command.lift.x, mouse_command.press.x);
+        let max_y = max(mouse_command.lift.y, mouse_command.press.y);
+
+        commands.spawn((
+            Position::new(min_x, min_y),
+            Rectangle::new((max_x - min_x) as u32, (max_y - min_y) as u32),
+            Color::CYAN.into_component(),
+            Solid::all(),
+        ));
     }
 }

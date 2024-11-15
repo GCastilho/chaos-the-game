@@ -2,7 +2,10 @@ mod ecs;
 mod game;
 mod keyboard;
 
-use crate::ecs::input::handle_player_input;
+use crate::ecs::input::{
+    handle_mouse, handle_player_input, insert_mouse_resources, insert_mouse_square, MouseLift,
+    MousePress,
+};
 use crate::ecs::player::{player_collides_coin, update_jump_time};
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use ecs::{
@@ -49,6 +52,7 @@ fn main() -> Result<(), String> {
     world.insert_non_send_resource(canvas.clone());
     world.insert_resource(InputState::default());
     world.insert_resource(Events::<InputEvent>::default());
+    insert_mouse_resources(&mut world);
 
     Schedule::new(Startup)
         .add_systems(init_player_system)
@@ -65,7 +69,8 @@ fn main() -> Result<(), String> {
                 .after(update_input_state),
         )
         .add_systems(player_collides_coin)
-        .add_systems(update_jump_time);
+        .add_systems(update_jump_time)
+        .add_systems((handle_mouse, insert_mouse_square));
 
     let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);
@@ -98,9 +103,21 @@ fn main() -> Result<(), String> {
                 }
                 Event::MouseButtonDown { x, y, .. } => {
                     game.handle_mousepress(x, canvas.lock().unwrap().window().size().1 as i32 - y);
+                    world
+                        .resource_mut::<Events<MousePress>>()
+                        .send(MousePress::new(
+                            x,
+                            canvas.lock().unwrap().window().size().1 as i32 - y,
+                        ));
                 }
                 Event::MouseButtonUp { x, y, .. } => {
                     game.handle_mouselift(x, canvas.lock().unwrap().window().size().1 as i32 - y);
+                    world
+                        .resource_mut::<Events<MouseLift>>()
+                        .send(MouseLift::new(
+                            x,
+                            canvas.lock().unwrap().window().size().1 as i32 - y,
+                        ));
                 }
                 Event::MouseMotion { x, y, .. } => {
                     println!("motion: ({x},{y})");
