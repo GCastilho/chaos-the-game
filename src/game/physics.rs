@@ -3,7 +3,8 @@ use crate::game::player::Jump;
 use bevy_ecs::prelude::Query;
 use bevy_ecs::query::{With, Without};
 
-const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
+pub const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
+pub const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
 /// Colisão entre coisas com e sem velocidade.
 ///
@@ -45,7 +46,9 @@ pub fn handle_collision_moving_static(
 
 pub fn gravitate(mut query: Query<&mut Velocity>) {
     for mut velocity in query.iter_mut() {
-        velocity.y -= PLAYER_VERTICAL_ACCELERATION;
+        if velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
+            velocity.y -= PLAYER_VERTICAL_ACCELERATION;
+        }
     }
 }
 

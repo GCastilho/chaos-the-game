@@ -4,7 +4,8 @@ use bevy_ecs::{
     system::{NonSendMut, Query},
 };
 use sdl2::{rect::Rect, render::WindowCanvas};
-use std::{rc::Rc, sync::Mutex};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, ScheduleLabel)]
 pub struct Render;
@@ -12,9 +13,9 @@ pub struct Render;
 // TODO: Não ter unwrap
 pub fn draw(
     query: Query<(&Position, &Rectangle, &Color)>,
-    mut canvas: NonSendMut<Rc<Mutex<WindowCanvas>>>,
+    canvas: NonSendMut<Rc<RefCell<WindowCanvas>>>,
 ) {
-    let mut canvas = canvas.lock().unwrap();
+    let mut canvas = canvas.borrow_mut();
     for (pos, rect, color) in query.iter() {
         canvas.set_draw_color(**color);
         let square: Rect = Rect::new(

@@ -1,20 +1,21 @@
 mod game;
 
 use crate::game::input::{
-    handle_mouse, handle_player_input, insert_mouse_resources, insert_mouse_square, MouseLift,
-    MousePress,
+    handle_mouse, insert_mouse_resources, insert_mouse_square, MouseLift, MousePress,
 };
 use crate::game::player::{player_collides_coin, update_jump_time};
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
+use game::player::handle_player_input;
 use game::{
-    draw_systems::{draw, Render},
+    draw::{draw, Render},
     input::{update_input_state, InputEvent, InputState},
-    physics_systems::{gravitate, handle_collision_moving_static, move_system},
-    startup_systems::{init_player_system, Startup},
+    physics::{gravitate, handle_collision_moving_static, move_system},
+    startup::{init_player_system, Startup},
     Update,
 };
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color};
-use std::{rc::Rc, sync::Mutex, time::Duration};
+use std::cell::RefCell;
+use std::{rc::Rc, time::Duration};
 
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
@@ -42,8 +43,8 @@ fn main() -> Result<(), String> {
 
     let mut world = World::new();
 
-    // TODO: Tentar tirar canvas de um mutex
-    let canvas = Rc::new(Mutex::new(canvas));
+    // TODO: Se todo o draw for feito pelo bevy não tem a necessidade de ter Rc ou RefCell
+    let canvas = Rc::new(RefCell::new(canvas));
 
     world.insert_non_send_resource(canvas.clone());
     world.insert_resource(InputState::default());
@@ -75,11 +76,8 @@ fn main() -> Result<(), String> {
         .event_pump()
         .expect("Failed to get SDL event pump");
     'running: loop {
-        canvas
-            .lock()
-            .unwrap()
-            .set_draw_color(Color::RGB(80, 80, 80));
-        canvas.lock().unwrap().clear();
+        canvas.borrow_mut().set_draw_color(Color::RGB(80, 80, 80));
+        canvas.borrow_mut().clear();
 
         for event in event_pump.poll_iter() {
             match event {
@@ -99,7 +97,7 @@ fn main() -> Result<(), String> {
                         .resource_mut::<Events<MousePress>>()
                         .send(MousePress::new(
                             x,
-                            canvas.lock().unwrap().window().size().1 as i32 - y,
+                            canvas.borrow_mut().window().size().1 as i32 - y,
                         ));
                 }
                 Event::MouseButtonUp { x, y, .. } => {
@@ -107,7 +105,7 @@ fn main() -> Result<(), String> {
                         .resource_mut::<Events<MouseLift>>()
                         .send(MouseLift::new(
                             x,
-                            canvas.lock().unwrap().window().size().1 as i32 - y,
+                            canvas.borrow_mut().window().size().1 as i32 - y,
                         ));
                 }
                 Event::MouseMotion { x, y, .. } => {
@@ -120,7 +118,7 @@ fn main() -> Result<(), String> {
         update_scheduler.run(&mut world);
         render_scheduler.run(&mut world);
 
-        canvas.lock().unwrap().present();
+        canvas.borrow_mut().present();
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 

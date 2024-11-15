@@ -1,22 +1,13 @@
-use crate::game::components::{Componentable, Player, Position, Rectangle, Solid, Velocity};
-use crate::game::player::Jump;
-use bevy_ecs::event::{EventReader, EventWriter, Events};
-use bevy_ecs::prelude::{Commands, Query};
-use bevy_ecs::query::With;
-use bevy_ecs::system::{Local, Res, ResMut, Resource};
-use bevy_ecs::world::World;
+use super::components::{Componentable, Position, Rectangle, Solid};
+use bevy_ecs::{
+    event::{EventReader, EventWriter, Events},
+    prelude::Commands,
+    system::{Local, ResMut, Resource},
+    world::World,
+};
 use enum_map::EnumMap;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use std::cmp::Ordering::{Equal, Greater, Less};
+use sdl2::{event::Event, keyboard::Keycode, pixels::Color};
 use std::cmp::{max, min};
-
-const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
-const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
-
-const PLAYER_MAX_VERTICAL_SPEED: i32 = 15;
-const PLAYER_VERTICAL_ACCELERATION: i32 = 1;
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 pub enum ActionState {
@@ -110,38 +101,6 @@ pub fn update_input_state(
 ) {
     for ev in ev_input.read() {
         input_state.state[ev.action] = ev.state;
-    }
-}
-
-pub fn handle_player_input(
-    mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
-    inputs: Res<InputState>,
-) {
-    for (mut velocity, mut jump) in query.iter_mut() {
-        if inputs.state[Action::Left].active() && velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
-            velocity.x -= PLAYER_HORIZONTAL_ACCELERATION;
-        }
-        if inputs.state[Action::Right].active() && velocity.x <= PLAYER_MAX_HORIZONTAL_SPEED {
-            velocity.x += PLAYER_HORIZONTAL_ACCELERATION;
-        }
-
-        if !inputs.state[Action::Left].active() && !inputs.state[Action::Right].active() {
-            match velocity.x.cmp(&0) {
-                Less => velocity.x += PLAYER_HORIZONTAL_ACCELERATION,
-                Greater => velocity.x -= PLAYER_HORIZONTAL_ACCELERATION,
-                Equal => (),
-            }
-        }
-
-        if inputs.state[Action::Up].active() && velocity.y <= PLAYER_MAX_VERTICAL_SPEED {
-            jump.do_jump(&mut velocity);
-        } else {
-            jump.clear_jump()
-        }
-
-        if inputs.state[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
-            velocity.y -= 10;
-        }
     }
 }
 
