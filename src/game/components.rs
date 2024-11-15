@@ -1,4 +1,3 @@
-use bevy_ecs::change_detection::Mut;
 use bevy_ecs::prelude::Component;
 use enum_map::EnumMap;
 use std::cmp::Ordering::*;
@@ -36,7 +35,7 @@ impl Rectangle {
         Self { width, height }
     }
 
-    pub fn on_position<'a>(&'a self, position: Mut<'a, Position>) -> Hitbox<'a> {
+    pub fn on_position<'a>(&'a self, position: &'a mut Position) -> Hitbox<'a> {
         Hitbox {
             rect: self,
             pos: position,
@@ -52,8 +51,9 @@ pub enum CollisionAxis {
     Right,
 }
 
+// TODO: Seria interessante se tivesse como post ser mutável ou não dependendo de como ela é inicializada
 pub struct Hitbox<'a> {
-    pub pos: Mut<'a, Position>,
+    pub pos: &'a mut Position,
     pub rect: &'a Rectangle,
 }
 
