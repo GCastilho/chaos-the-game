@@ -1,15 +1,17 @@
-use crate::game::components::{CoinKind, Color, Player, Position, Rectangle, Velocity};
 use crate::game::{
-    input::{Action, InputState},
+    input::{Action, InputState, InputEvent},
     physics::PLAYER_MAX_VERTICAL_SPEED,
 };
 use bevy_ecs::change_detection::Res;
+use bevy_ecs::event::EventReader;
 use bevy_ecs::query::Without;
+use bevy_ecs::system::Commands;
 use bevy_ecs::{
     prelude::{Component, Query},
     query::With,
 };
 use std::cmp::Ordering::{Equal, Greater, Less};
+use super::components::{CoinKind, Color, Player, Position, Rectangle, Velocity, Bullet, BulletBundle, Componentable, Solid};
 
 const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
 const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
@@ -17,7 +19,10 @@ const JUMP_FRAMES: usize = 30;
 
 pub fn handle_player_input(
     mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
+    mut ev_input: EventReader<InputEvent>,
     inputs: Res<InputState>,
+    mut player_position: Query<&Position, With<Player>>,
+    mut commands: Commands,
 ) {
     for (mut velocity, mut jump) in query.iter_mut() {
         if inputs.state()[Action::Left].active() && velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
@@ -44,6 +49,21 @@ pub fn handle_player_input(
         if inputs.state()[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
             velocity.y -= 10;
         }
+    }
+
+    let player_position = player_position.single();
+
+    for ev in ev_input.read() {
+        if ev.state.active() && ev.action == Action::Atack {
+            commands.spawn(BulletBundle {
+                marker: Bullet,
+                position: Position::new(player_position.x + 60, player_position.y + 25),
+                velocity: Velocity::new(10,0),
+                rectangle: Rectangle::new(10, 10),
+                solid: Solid::all(),
+                color: sdl2::pixels::Color::RED.into_component(),
+            });
+        };
     }
 }
 

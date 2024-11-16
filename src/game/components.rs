@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::Component;
+use bevy_ecs::{prelude::Component, bundle::Bundle};
 use enum_map::EnumMap;
 use std::cmp::Ordering::*;
 use std::ops::Deref;
@@ -7,6 +7,19 @@ use std::ops::Deref;
 pub struct Player;
 
 #[derive(Debug, Component)]
+pub struct Bullet;
+
+#[derive(Debug, Bundle)]
+pub struct BulletBundle {
+    pub marker: Bullet,
+    pub position: Position,
+    pub velocity: Velocity,
+    pub rectangle: Rectangle,
+    pub solid: Solid,
+    pub color: Color,
+}
+
+#[derive(Debug, Component, Clone)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -23,6 +36,15 @@ pub struct Velocity {
     pub x: i32,
     pub y: i32,
 }
+
+impl Velocity {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Debug, Component)]
+pub struct Gravitable;
 
 #[derive(Debug, Clone, Copy, Component)]
 pub struct Rectangle {
@@ -110,11 +132,11 @@ impl<'a> Hitbox<'a> {
 }
 
 pub trait Componentable {
-    fn into_component(self) -> impl Component + 'static;
+    fn into_component(self) -> Color;
 }
 
 impl Componentable for sdl2::pixels::Color {
-    fn into_component(self) -> impl Component + 'static {
+    fn into_component(self) -> Color {
         Color(self)
     }
 }

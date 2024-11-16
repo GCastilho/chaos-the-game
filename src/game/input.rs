@@ -31,6 +31,7 @@ pub enum Action {
     Down,
     Left,
     Right,
+    Atack,
 }
 
 impl TryFrom<Keycode> for Action {
@@ -42,6 +43,7 @@ impl TryFrom<Keycode> for Action {
             Keycode::Right => Self::Right,
             Keycode::Down => Self::Down,
             Keycode::Up => Self::Up,
+            Keycode::A => Self::Atack,
             _ => return Err(keycode),
         };
         Ok(action)
@@ -50,8 +52,8 @@ impl TryFrom<Keycode> for Action {
 
 #[derive(Debug, bevy_ecs::event::Event)]
 pub struct InputEvent {
-    action: Action,
-    state: ActionState,
+    pub action: Action,
+    pub state: ActionState,
 }
 
 impl TryFrom<Event> for InputEvent {

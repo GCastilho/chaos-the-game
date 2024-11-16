@@ -1,5 +1,5 @@
 use super::{
-    components::{CoinKind, Componentable, Player, Position, Rectangle, Solid, Velocity},
+    components::{CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity},
     player::Jump,
 };
 use bevy_ecs::schedule::ScheduleLabel;
@@ -18,6 +18,7 @@ pub fn init_player_system(mut commands: Commands) {
         Color::BLUE.into_component(),
         Solid::all(),
         Jump::default(),
+        Gravitable,
     ));
 
     // TODO: Chão não ser inicializado aqui
