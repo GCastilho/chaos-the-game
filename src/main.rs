@@ -13,9 +13,8 @@ use game::{
     startup::{init_player_system, Startup},
     Update,
 };
-use sdl2::{event::Event, keyboard::Keycode, pixels::Color};
-use std::cell::RefCell;
-use std::{rc::Rc, time::Duration};
+use sdl2::{event::Event, keyboard::Keycode, pixels::Color, render::WindowCanvas};
+use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
@@ -29,24 +28,18 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        .position(-900, 350)
+        // .position(-900, 350)
         .build()
         .expect("Failed to build main window");
 
-    let mut canvas = window
+    let canvas = window
         .into_canvas()
         .build()
         .expect("Failed to get SDL canvas");
-    canvas.set_draw_color(Color::RGB(0, 255, 255));
-    canvas.clear();
-    canvas.present();
 
     let mut world = World::new();
 
-    // TODO: Se todo o draw for feito pelo bevy não tem a necessidade de ter Rc ou RefCell
-    let canvas = Rc::new(RefCell::new(canvas));
-
-    world.insert_non_send_resource(canvas.clone());
+    world.insert_non_send_resource(canvas);
     world.insert_resource(InputState::default());
     world.insert_resource(Events::<InputEvent>::default());
     insert_mouse_resources(&mut world);
@@ -76,8 +69,10 @@ fn main() -> Result<(), String> {
         .event_pump()
         .expect("Failed to get SDL event pump");
     'running: loop {
-        canvas.borrow_mut().set_draw_color(Color::RGB(80, 80, 80));
-        canvas.borrow_mut().clear();
+        let mut canvas = world.non_send_resource_mut::<WindowCanvas>();
+        canvas.set_draw_color(Color::RGB(80, 80, 80));
+        canvas.clear();
+        drop(canvas);
 
         for event in event_pump.poll_iter() {
             match event {
@@ -95,18 +90,12 @@ fn main() -> Result<(), String> {
                 Event::MouseButtonDown { x, y, .. } => {
                     world
                         .resource_mut::<Events<MousePress>>()
-                        .send(MousePress::new(
-                            x,
-                            canvas.borrow_mut().window().size().1 as i32 - y,
-                        ));
+                        .send(MousePress::new(x, SCREEN_HEIGHT as i32 - y));
                 }
                 Event::MouseButtonUp { x, y, .. } => {
                     world
                         .resource_mut::<Events<MouseLift>>()
-                        .send(MouseLift::new(
-                            x,
-                            canvas.borrow_mut().window().size().1 as i32 - y,
-                        ));
+                        .send(MouseLift::new(x, SCREEN_HEIGHT as i32 - y));
                 }
                 Event::MouseMotion { x, y, .. } => {
                     println!("motion: ({x},{y})");
@@ -118,7 +107,7 @@ fn main() -> Result<(), String> {
         update_scheduler.run(&mut world);
         render_scheduler.run(&mut world);
 
-        canvas.borrow_mut().present();
+        world.non_send_resource_mut::<WindowCanvas>().present();
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 
