@@ -1,15 +1,15 @@
 mod game;
 
-use crate::game::input::{
-    handle_mouse, insert_mouse_resources, insert_mouse_square, MouseLift, MousePress,
-};
-use crate::game::player::{player_collides_coin, update_jump_time};
+use crate::game::resources::Time;
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
-use game::player::handle_player_input;
 use game::{
     draw::{draw, Render},
-    input::{update_input_state, InputEvent, InputState},
+    input::{
+        handle_mouse, insert_mouse_resources, insert_mouse_square, update_input_state, InputEvent,
+        InputState, MouseLift, MousePress,
+    },
     physics::{gravitate, handle_collision_moving_static, move_system},
+    player::{handle_player_input, player_collides_coin, update_jump_time},
     startup::{init_player_system, Startup},
     Update,
 };
@@ -19,6 +19,7 @@ use std::time::Duration;
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
+// TODO: Posição usar float e movimento não ser dependente do frame
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init().expect("Could not init SDL");
     let video_subsystem = sdl_context
@@ -42,6 +43,7 @@ fn main() -> Result<(), String> {
     world.insert_non_send_resource(canvas);
     world.insert_resource(InputState::default());
     world.insert_resource(Events::<InputEvent>::default());
+    world.insert_resource(Time::new());
     insert_mouse_resources(&mut world);
 
     Schedule::new(Startup)
@@ -73,6 +75,7 @@ fn main() -> Result<(), String> {
         canvas.set_draw_color(Color::RGB(80, 80, 80));
         canvas.clear();
         drop(canvas);
+        world.resource_mut::<Time>().update();
 
         for event in event_pump.poll_iter() {
             match event {

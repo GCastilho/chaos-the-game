@@ -8,7 +8,6 @@ use sdl2::{rect::Rect, render::WindowCanvas};
 #[derive(Debug, Clone, Eq, PartialEq, Hash, ScheduleLabel)]
 pub struct Render;
 
-// TODO: Não ter unwrap
 pub fn draw(query: Query<(&Position, &Rectangle, &Color)>, mut canvas: NonSendMut<WindowCanvas>) {
     for (pos, rect, color) in query.iter() {
         canvas.set_draw_color(**color);
@@ -18,6 +17,6 @@ pub fn draw(query: Query<(&Position, &Rectangle, &Color)>, mut canvas: NonSendMu
             rect.width,
             rect.height,
         );
-        canvas.fill_rect(square).unwrap();
+        canvas.fill_rect(square).expect("Can't fill rect");
     }
 }

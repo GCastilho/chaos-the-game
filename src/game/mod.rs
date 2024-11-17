@@ -5,6 +5,7 @@ pub mod draw;
 pub mod input;
 pub mod physics;
 pub mod player;
+pub mod resources;
 pub mod startup;
 
 #[derive(Debug, ScheduleLabel, Clone, Eq, Hash, PartialEq)]
