@@ -1,5 +1,9 @@
+use super::components::{
+    Bullet, BulletBundle, CoinKind, Color, Componentable, Player, Position, Rectangle, Solid,
+    Velocity,
+};
 use crate::game::{
-    input::{Action, InputState, InputEvent},
+    input::{Action, InputEvent, InputState},
     physics::PLAYER_MAX_VERTICAL_SPEED,
 };
 use bevy_ecs::change_detection::Res;
@@ -11,10 +15,9 @@ use bevy_ecs::{
     query::With,
 };
 use std::cmp::Ordering::{Equal, Greater, Less};
-use super::components::{CoinKind, Color, Player, Position, Rectangle, Velocity, Bullet, BulletBundle, Componentable, Solid};
 
-const PLAYER_MAX_HORIZONTAL_SPEED: i32 = 15;
-const PLAYER_HORIZONTAL_ACCELERATION: i32 = 1;
+const PLAYER_MAX_HORIZONTAL_SPEED: f64 = 15.0;
+const PLAYER_HORIZONTAL_ACCELERATION: f64 = 1.0;
 const JUMP_FRAMES: usize = 30;
 
 pub fn handle_player_input(
@@ -33,7 +36,7 @@ pub fn handle_player_input(
         }
 
         if !inputs.state()[Action::Left].active() && !inputs.state()[Action::Right].active() {
-            match velocity.x.cmp(&0) {
+            match velocity.x.total_cmp(&0.0) {
                 Less => velocity.x += PLAYER_HORIZONTAL_ACCELERATION,
                 Greater => velocity.x -= PLAYER_HORIZONTAL_ACCELERATION,
                 Equal => (),
@@ -47,7 +50,7 @@ pub fn handle_player_input(
         }
 
         if inputs.state()[Action::Down].active() && velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
-            velocity.y -= 10;
+            velocity.y -= 10.0;
         }
     }
 
@@ -57,8 +60,8 @@ pub fn handle_player_input(
         if ev.state.active() && ev.action == Action::Atack {
             commands.spawn(BulletBundle {
                 marker: Bullet,
-                position: Position::new(player_position.x + 60, player_position.y + 25),
-                velocity: Velocity::new(10,0),
+                position: Position::new(player_position.x + 60.0, player_position.y + 25.0),
+                velocity: Velocity::new(10, 0),
                 rectangle: Rectangle::new(10, 10),
                 solid: Solid::all(),
                 color: sdl2::pixels::Color::RED.into_component(),
@@ -78,7 +81,7 @@ pub fn player_collides_coin(
         if player_hitbox.colides_with(&hitbox) {
             match kind {
                 CoinKind::Color(color) => player_color.0 = color.clone(),
-                CoinKind::Jump(amount) => vel.y = *amount as i32,
+                CoinKind::Jump(amount) => vel.y = *amount as f64,
             }
         }
     }
@@ -96,7 +99,7 @@ impl Jump {
     }
 
     fn update_velocity(&self, velocity: &mut Velocity) {
-        velocity.y = (JUMP_FRAMES - (JUMP_FRAMES - self.frames_to_jump() / 2)) as i32;
+        velocity.y = (JUMP_FRAMES - (JUMP_FRAMES - self.frames_to_jump() / 2)) as f64;
     }
 
     pub fn do_jump(&mut self, vel: &mut Velocity) {

@@ -1,4 +1,4 @@
-use bevy_ecs::{prelude::Component, bundle::Bundle};
+use bevy_ecs::{bundle::Bundle, prelude::Component};
 use enum_map::EnumMap;
 use std::cmp::Ordering::*;
 use std::ops::Deref;
@@ -21,25 +21,31 @@ pub struct BulletBundle {
 
 #[derive(Debug, Component, Clone)]
 pub struct Position {
-    pub x: i32,
-    pub y: i32,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Position {
-    pub fn new(x: i32, y: i32) -> Self {
-        Self { x, y }
+    pub fn new<T: Into<f64>>(x: T, y: T) -> Self {
+        Self {
+            x: x.into(),
+            y: y.into(),
+        }
     }
 }
 
 #[derive(Debug, Default, Component)]
 pub struct Velocity {
-    pub x: i32,
-    pub y: i32,
+    pub x: f64,
+    pub y: f64,
 }
 
 impl Velocity {
-    pub fn new(x: i32, y: i32) -> Self {
-        Self { x, y }
+    pub fn new<T: Into<f64>>(x: T, y: T) -> Self {
+        Self {
+            x: x.into(),
+            y: y.into(),
+        }
     }
 }
 
@@ -80,19 +86,19 @@ pub struct Hitbox<'a> {
 }
 
 impl<'a> Hitbox<'a> {
-    pub fn left(&self) -> i32 {
+    pub fn left(&self) -> f64 {
         self.pos.x
     }
 
-    pub fn right(&self) -> i32 {
-        self.pos.x + self.rect.width as i32
+    pub fn right(&self) -> f64 {
+        self.pos.x + self.rect.width as f64
     }
 
-    pub fn top(&self) -> i32 {
-        self.pos.y + self.rect.height as i32
+    pub fn top(&self) -> f64 {
+        self.pos.y + self.rect.height as f64
     }
 
-    pub fn bottom(&self) -> i32 {
+    pub fn bottom(&self) -> f64 {
         self.pos.y
     }
 
@@ -113,17 +119,17 @@ impl<'a> Hitbox<'a> {
         let x_right = self.right() - other.left();
         let x_left = other.right() - self.left();
 
-        let (y_axis, y_value) = match y_up.cmp(&y_down) {
+        let (y_axis, y_value) = match y_up.total_cmp(&y_down) {
             Greater | Equal => (CollisionAxis::Down, y_down),
             Less => (CollisionAxis::Up, y_up),
         };
 
-        let (x_axis, x_value) = match x_left.cmp(&x_right) {
+        let (x_axis, x_value) = match x_left.total_cmp(&x_right) {
             Greater | Equal => (CollisionAxis::Right, x_right),
             Less => (CollisionAxis::Left, x_left),
         };
 
-        match y_value.cmp(&x_value) {
+        match y_value.total_cmp(&x_value) {
             Greater => Some(x_axis),
             Less => Some(y_axis),
             Equal => None,

@@ -12,8 +12,8 @@ pub fn draw(query: Query<(&Position, &Rectangle, &Color)>, mut canvas: NonSendMu
     for (pos, rect, color) in query.iter() {
         canvas.set_draw_color(**color);
         let square: Rect = Rect::new(
-            pos.x,
-            canvas.window().size().1 as i32 - pos.y - rect.height as i32,
+            pos.x as i32,
+            canvas.window().size().1 as i32 - pos.y as i32 - rect.height as i32,
             rect.width,
             rect.height,
         );
