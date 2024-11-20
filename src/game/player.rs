@@ -22,7 +22,7 @@ use std::{
     time::Duration,
 };
 
-const JUMP_MILLIS: u64 = 300;
+const JUMP_MILLIS: u64 = 500;
 
 pub fn handle_player_input(
     mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
@@ -61,7 +61,7 @@ pub fn handle_player_input(
     let player_position = player_position.single();
 
     for ev in ev_input.read() {
-        if ev.state.active() && ev.action == Action::Atack {
+        if ev.state.active() && ev.action == Action::Attack {
             commands.spawn(BulletBundle {
                 marker: Bullet,
                 position: Position::new(player_position.x + 60.0, player_position.y + 25.0),
@@ -100,7 +100,9 @@ pub struct Jump {
 impl Jump {
     fn update_velocity(&self, velocity: &mut Velocity) {
         if let Some(time) = self.time_to_jump {
-            velocity.y += time.as_secs_f64() * PLAYER_VERTICAL_ACCELERATION;
+            let max_jump_time = Duration::from_millis(JUMP_MILLIS);
+            velocity.y = (max_jump_time - (max_jump_time - time / 2)).as_secs_f64()
+                * PLAYER_VERTICAL_ACCELERATION;
         }
     }
 

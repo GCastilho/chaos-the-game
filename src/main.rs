@@ -29,7 +29,7 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        // .position(-1010, 310)
+        // .position(-1010, 295)
         .build()
         .expect("Failed to build main window");
 

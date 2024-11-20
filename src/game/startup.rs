@@ -2,6 +2,7 @@ use super::{
     components::{
         CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity,
     },
+    physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
 use bevy_ecs::schedule::ScheduleLabel;
@@ -52,7 +53,7 @@ pub fn init_player_system(mut commands: Commands) {
     commands.spawn((
         Position::new(300, 115),
         coin_rect,
-        CoinKind::Jump(20),
+        CoinKind::Jump((PLAYER_VERTICAL_ACCELERATION / 3.0).trunc() as u32),
         Color::CYAN.into_component(),
     ));
 }

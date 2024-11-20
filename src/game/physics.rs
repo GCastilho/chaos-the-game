@@ -8,10 +8,10 @@ use bevy_ecs::{
     query::{With, Without},
 };
 
-pub const PLAYER_MAX_VERTICAL_SPEED: f64 = 15.0;
-pub const PLAYER_MAX_HORIZONTAL_SPEED: f64 = 15.0;
-pub const PLAYER_VERTICAL_ACCELERATION: f64 = 1.0;
-pub const PLAYER_HORIZONTAL_ACCELERATION: f64 = 1.0;
+pub const PLAYER_MAX_VERTICAL_SPEED: f64 = 1500.0;
+pub const PLAYER_MAX_HORIZONTAL_SPEED: f64 = 900.0;
+pub const PLAYER_VERTICAL_ACCELERATION: f64 = 5000.0;
+pub const PLAYER_HORIZONTAL_ACCELERATION: f64 = 60.0;
 
 /// Colisão entre coisas com e sem velocidade.
 ///

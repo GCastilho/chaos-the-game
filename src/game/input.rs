@@ -31,7 +31,7 @@ pub enum Action {
     Down,
     Left,
     Right,
-    Atack,
+    Attack,
 }
 
 impl TryFrom<Keycode> for Action {
@@ -43,7 +43,7 @@ impl TryFrom<Keycode> for Action {
             Keycode::Right => Self::Right,
             Keycode::Down => Self::Down,
             Keycode::Up => Self::Up,
-            Keycode::A => Self::Atack,
+            Keycode::A => Self::Attack,
             _ => return Err(keycode),
         };
         Ok(action)
