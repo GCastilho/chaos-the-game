@@ -1,5 +1,7 @@
 use super::{
-    components::{CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity},
+    components::{
+        CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity,
+    },
     player::Jump,
 };
 use bevy_ecs::schedule::ScheduleLabel;
@@ -12,7 +14,7 @@ pub struct Startup;
 pub fn init_player_system(mut commands: Commands) {
     commands.spawn((
         Player,
-        Position::new(250, 400),
+        Position::new(250, 600),
         Rectangle::new(50, 50),
         Velocity::default(),
         Color::BLUE.into_component(),

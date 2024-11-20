@@ -1,11 +1,17 @@
-use super::components::{CollisionAxis, Gravitable, Position, Rectangle, Solid, Velocity};
-use crate::game::player::Jump;
-use crate::game::resources::Time;
-use bevy_ecs::prelude::{Query, Res};
-use bevy_ecs::query::{With, Without};
+use super::{
+    components::{CollisionAxis, Gravitable, Position, Rectangle, Solid, Velocity},
+    player::Jump,
+    resources::Time,
+};
+use bevy_ecs::{
+    prelude::{Query, Res},
+    query::{With, Without},
+};
 
 pub const PLAYER_MAX_VERTICAL_SPEED: f64 = 15.0;
+pub const PLAYER_MAX_HORIZONTAL_SPEED: f64 = 15.0;
 pub const PLAYER_VERTICAL_ACCELERATION: f64 = 1.0;
+pub const PLAYER_HORIZONTAL_ACCELERATION: f64 = 1.0;
 
 /// Colisão entre coisas com e sem velocidade.
 ///
@@ -51,17 +57,36 @@ pub fn handle_collision_moving_static(
 }
 
 pub fn gravitate(mut query: Query<&mut Velocity, With<Gravitable>>, time: Res<Time>) {
-    println!("gravitate: {:?} {:?}", time.delta(), time.elapsed());
+    let delta = time.delta().as_secs_f64();
     for mut velocity in query.iter_mut() {
-        if velocity.y >= -PLAYER_MAX_VERTICAL_SPEED {
-            velocity.y -= PLAYER_VERTICAL_ACCELERATION;
+        if velocity.y > -PLAYER_MAX_VERTICAL_SPEED {
+            velocity.y -= PLAYER_VERTICAL_ACCELERATION * delta;
         }
     }
 }
 
-pub fn move_system(mut query: Query<(&mut Position, &Velocity)>) {
+pub fn limit_velocity(mut query: Query<&mut Velocity>) {
+    const NEGATIVE_PLAYER_MAX_VERTICAL_SPEED: f64 = -PLAYER_MAX_VERTICAL_SPEED;
+    const NEGATIVE_PLAYER_MAX_HORIZONTAL_SPEED: f64 = -PLAYER_MAX_HORIZONTAL_SPEED;
+    for mut velocity in query.iter_mut() {
+        velocity.y = match velocity.y {
+            PLAYER_MAX_VERTICAL_SPEED.. => PLAYER_MAX_VERTICAL_SPEED,
+            ..NEGATIVE_PLAYER_MAX_VERTICAL_SPEED => NEGATIVE_PLAYER_MAX_VERTICAL_SPEED,
+            _ => velocity.y,
+        };
+        velocity.x = match velocity.x {
+            PLAYER_MAX_HORIZONTAL_SPEED.. => PLAYER_MAX_HORIZONTAL_SPEED,
+            ..NEGATIVE_PLAYER_MAX_HORIZONTAL_SPEED => NEGATIVE_PLAYER_MAX_HORIZONTAL_SPEED,
+            _ => velocity.x,
+        }
+    }
+}
+
+pub fn move_system(mut query: Query<(&mut Position, &Velocity)>, time: Res<Time>) {
+    let delta = time.delta().as_secs_f64();
     for (mut pos, vel) in query.iter_mut() {
-        pos.x += vel.x;
-        pos.y += vel.y;
+        pos.x += vel.x * delta;
+        pos.y += vel.y * delta;
+        println!("{:?} {:?}", pos, vel);
     }
 }

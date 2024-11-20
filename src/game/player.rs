@@ -1,24 +1,28 @@
-use super::components::{
-    Bullet, BulletBundle, CoinKind, Color, Componentable, Player, Position, Rectangle, Solid,
-    Velocity,
-};
-use crate::game::{
+use super::{
+    components::{
+        Bullet, BulletBundle, CoinKind, Color, Componentable, Player, Position, Rectangle, Solid,
+        Velocity,
+    },
     input::{Action, InputEvent, InputState},
-    physics::PLAYER_MAX_VERTICAL_SPEED,
+    physics::{
+        PLAYER_HORIZONTAL_ACCELERATION, PLAYER_MAX_HORIZONTAL_SPEED, PLAYER_MAX_VERTICAL_SPEED,
+        PLAYER_VERTICAL_ACCELERATION,
+    },
+    resources::Time,
 };
-use bevy_ecs::change_detection::Res;
-use bevy_ecs::event::EventReader;
-use bevy_ecs::query::Without;
-use bevy_ecs::system::Commands;
 use bevy_ecs::{
+    change_detection::Res,
+    event::EventReader,
     prelude::{Component, Query},
-    query::With,
+    query::{With, Without},
+    system::Commands,
 };
-use std::cmp::Ordering::{Equal, Greater, Less};
+use std::{
+    cmp::Ordering::{Equal, Greater, Less},
+    time::Duration,
+};
 
-const PLAYER_MAX_HORIZONTAL_SPEED: f64 = 15.0;
-const PLAYER_HORIZONTAL_ACCELERATION: f64 = 1.0;
-const JUMP_FRAMES: usize = 30;
+const JUMP_MILLIS: u64 = 300;
 
 pub fn handle_player_input(
     mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
@@ -89,27 +93,25 @@ pub fn player_collides_coin(
 
 #[derive(Debug, Component, Default)]
 pub struct Jump {
-    frames_to_jump: Option<usize>,
+    time_to_jump: Option<Duration>,
     pub grounded: bool,
 }
 
 impl Jump {
-    fn frames_to_jump(&self) -> usize {
-        self.frames_to_jump.unwrap_or(0)
-    }
-
     fn update_velocity(&self, velocity: &mut Velocity) {
-        velocity.y = (JUMP_FRAMES - (JUMP_FRAMES - self.frames_to_jump() / 2)) as f64;
+        if let Some(time) = self.time_to_jump {
+            velocity.y += time.as_secs_f64() * PLAYER_VERTICAL_ACCELERATION;
+        }
     }
 
     pub fn do_jump(&mut self, vel: &mut Velocity) {
-        match (self.grounded, self.frames_to_jump) {
+        match (self.grounded, self.time_to_jump) {
             (true, None) => {
                 self.grounded = false;
-                self.frames_to_jump = Some(JUMP_FRAMES);
+                self.time_to_jump = Some(Duration::from_millis(JUMP_MILLIS));
                 self.update_velocity(vel);
             }
-            (false, Some(v)) if v > 0 => {
+            (false, Some(v)) if v > Duration::ZERO => {
                 self.update_velocity(vel);
             }
             _ => (),
@@ -117,14 +119,14 @@ impl Jump {
     }
 
     pub fn clear_jump(&mut self) {
-        self.frames_to_jump = None;
+        self.time_to_jump = None;
     }
 }
 
-pub fn update_jump_time(mut query: Query<&mut Jump>) {
+pub fn update_jump_time(mut query: Query<&mut Jump>, time: Res<Time>) {
     for mut jump in query.iter_mut() {
-        if let Some(v) = &mut jump.frames_to_jump {
-            *v = v.saturating_sub(1);
+        if let Some(v) = &mut jump.time_to_jump {
+            *v = v.saturating_sub(time.delta());
         }
     }
 }

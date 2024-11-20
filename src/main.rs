@@ -8,7 +8,7 @@ use game::{
         handle_mouse, insert_mouse_resources, insert_mouse_square, update_input_state, InputEvent,
         InputState, MouseLift, MousePress,
     },
-    physics::{gravitate, handle_collision_moving_static, move_system},
+    physics::{gravitate, handle_collision_moving_static, limit_velocity, move_system},
     player::{handle_player_input, player_collides_coin, update_jump_time},
     startup::{init_player_system, Startup},
     Update,
@@ -16,8 +16,8 @@ use game::{
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, render::WindowCanvas};
 use std::time::Duration;
 
-const SCREEN_WIDTH: u32 = 800;
-const SCREEN_HEIGHT: u32 = 600;
+const SCREEN_WIDTH: u32 = 900;
+const SCREEN_HEIGHT: u32 = 700;
 
 // TODO: Posição usar float e movimento não ser dependente do frame
 fn main() -> Result<(), String> {
@@ -29,7 +29,7 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        // .position(-900, 350)
+        // .position(-1010, 310)
         .build()
         .expect("Failed to build main window");
 
@@ -56,7 +56,12 @@ fn main() -> Result<(), String> {
     update_scheduler
         .add_systems((update_input_state, handle_player_input).chain())
         .add_systems(
-            (gravitate, move_system, handle_collision_moving_static)
+            (
+                gravitate,
+                limit_velocity,
+                move_system,
+                handle_collision_moving_static,
+            )
                 .chain()
                 .after(update_input_state),
         )
