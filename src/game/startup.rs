@@ -18,7 +18,7 @@ pub fn init_player_system(mut commands: Commands) {
         Position::new(250, 600),
         Rectangle::new(50, 50),
         Velocity::default(),
-        Color::BLUE.into_component(),
+        Color::BLUE.into_fill(),
         Solid::all(),
         Jump::default(),
         Gravitable,
@@ -28,7 +28,7 @@ pub fn init_player_system(mut commands: Commands) {
     commands.spawn((
         Position::new(100, 100),
         Rectangle::new(400, 10),
-        Color::GREEN.into_component(),
+        Color::GREEN.into_fill(),
         Solid::all(),
     ));
 
@@ -42,18 +42,18 @@ pub fn init_player_system(mut commands: Commands) {
         Position::new(120, 115),
         coin_rect,
         CoinKind::Color(Color::MAGENTA),
-        Color::MAGENTA.into_component(), // pra cor entrar junto com kind tem q ser um bundle
+        Color::MAGENTA.into_fill(), // pra cor entrar junto com kind tem q ser um bundle
     ));
     commands.spawn((
         Position::new(470, 115),
         coin_rect,
         CoinKind::Color(Color::RED),
-        Color::RED.into_component(),
+        Color::RED.into_fill(),
     ));
     commands.spawn((
         Position::new(300, 115),
         coin_rect,
         CoinKind::Jump((PLAYER_VERTICAL_ACCELERATION / 3.0).trunc() as u32),
-        Color::CYAN.into_component(),
+        Color::CYAN.into_fill(),
     ));
 }

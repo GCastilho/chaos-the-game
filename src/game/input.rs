@@ -169,7 +169,7 @@ pub fn insert_mouse_square(mut mouse_commands: EventReader<MouseCommand>, mut co
         commands.spawn((
             Position::new(min_x, min_y),
             Rectangle::new((max_x - min_x) as u32, (max_y - min_y) as u32),
-            Color::CYAN.into_component(),
+            Color::CYAN.into_fill(),
             Solid::all(),
         ));
     }

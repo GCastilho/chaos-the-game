@@ -1,7 +1,7 @@
 use super::{
     components::{
-        Bullet, BulletBundle, CoinKind, Color, Componentable, Player, Position, Rectangle, Solid,
-        Velocity,
+        Bullet, BulletBundle, CoinKind, Colorable, Componentable, Player, Position, Rectangle,
+        Solid, Velocity,
     },
     input::{Action, InputEvent, InputState},
     physics::{
@@ -71,14 +71,14 @@ pub fn player_attack(
                 velocity: Velocity::new(10, 0),
                 rectangle: Rectangle::new(10, 10),
                 solid: Solid::all(),
-                color: sdl2::pixels::Color::RED.into_component(),
+                color: sdl2::pixels::Color::RED.into_fill(),
             });
         };
     }
 }
 
 pub fn player_collides_coin(
-    mut player: Query<(&mut Color, &mut Position, &Rectangle, &mut Velocity), With<Player>>,
+    mut player: Query<(&mut Colorable, &mut Position, &Rectangle, &mut Velocity), With<Player>>,
     mut coins: Query<(&CoinKind, &mut Position, &Rectangle), Without<Player>>,
 ) {
     let (mut player_color, mut pos, rect, mut vel) = player.single_mut();
@@ -87,7 +87,7 @@ pub fn player_collides_coin(
         let hitbox = rect.on_position(&mut pos);
         if player_hitbox.colides_with(&hitbox) {
             match kind {
-                CoinKind::Color(color) => player_color.0 = *color,
+                CoinKind::Color(color) => player_color.color = *color,
                 CoinKind::Jump(amount) => vel.y = *amount as f64,
             }
         }

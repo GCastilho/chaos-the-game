@@ -1,7 +1,7 @@
 use bevy_ecs::{bundle::Bundle, prelude::Component};
 use enum_map::EnumMap;
+use sdl2::pixels::Color;
 use std::cmp::Ordering::*;
-use std::ops::Deref;
 
 #[derive(Component)]
 pub struct Player;
@@ -16,7 +16,7 @@ pub struct BulletBundle {
     pub velocity: Velocity,
     pub rectangle: Rectangle,
     pub solid: Solid,
-    pub color: Color,
+    pub color: Colorable,
 }
 
 #[derive(Debug, Component, Clone)]
@@ -138,29 +138,41 @@ impl<'a> Hitbox<'a> {
 }
 
 pub trait Componentable {
-    fn into_component(self) -> Color;
+    fn into_fill(self) -> Colorable;
+    fn into_outline(self) -> Colorable;
 }
 
-impl Componentable for sdl2::pixels::Color {
-    fn into_component(self) -> Color {
-        Color(self)
+impl Componentable for Color {
+    fn into_fill(self) -> Colorable {
+        Colorable {
+            color: self,
+            draw_type: ColorDrawType::Fill,
+        }
     }
+
+    fn into_outline(self) -> Colorable {
+        Colorable {
+            color: self,
+            draw_type: ColorDrawType::Outline,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ColorDrawType {
+    Fill,
+    Outline,
 }
 
 #[derive(Debug, Component)]
-pub struct Color(pub sdl2::pixels::Color);
-
-impl Deref for Color {
-    type Target = sdl2::pixels::Color;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+pub struct Colorable {
+    pub color: Color,
+    pub draw_type: ColorDrawType,
 }
 
 #[derive(Debug, Component)]
 pub enum CoinKind {
-    Color(sdl2::pixels::Color),
+    Color(Color),
     Jump(u32),
 }
 
