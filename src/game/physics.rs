@@ -26,9 +26,9 @@ pub fn handle_collision_moving_static(
     mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
     for (mut pos, rec, mut vel, mut jump) in query_moving.iter_mut() {
-        let hitbox = rec.on_position(&mut *pos);
+        let hitbox = rec.on_position(&mut pos);
         for (mut pos, rec) in query_static.iter_mut() {
-            let static_hitbox = rec.on_position(&mut *pos);
+            let static_hitbox = rec.on_position(&mut pos);
             if let Some(axis) = hitbox.colides_with_axis(&static_hitbox) {
                 match axis {
                     CollisionAxis::Up => {

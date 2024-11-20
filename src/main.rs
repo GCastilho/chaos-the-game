@@ -9,7 +9,7 @@ use game::{
         InputState, MouseLift, MousePress,
     },
     physics::{gravitate, handle_collision_moving_static, limit_velocity, move_system},
-    player::{handle_player_input, player_collides_coin, update_jump_time},
+    player::{handle_player_input, player_attack, player_collides_coin, update_jump_time},
     startup::{init_player_system, Startup},
     Update,
 };
@@ -54,7 +54,7 @@ fn main() -> Result<(), String> {
     // E permite adicionar sistemas usando o nome do  scheduler
     let mut update_scheduler = Schedule::new(Update);
     update_scheduler
-        .add_systems((update_input_state, handle_player_input).chain())
+        .add_systems((update_input_state, handle_player_input, player_attack).chain())
         .add_systems(
             (
                 gravitate,

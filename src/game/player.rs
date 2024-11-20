@@ -26,10 +26,7 @@ const JUMP_MILLIS: u64 = 500;
 
 pub fn handle_player_input(
     mut query: Query<(&mut Velocity, &mut Jump), With<Player>>,
-    mut ev_input: EventReader<InputEvent>,
     inputs: Res<InputState>,
-    mut player_position: Query<&Position, With<Player>>,
-    mut commands: Commands,
 ) {
     for (mut velocity, mut jump) in query.iter_mut() {
         if inputs.state()[Action::Left].active() && velocity.x >= -PLAYER_MAX_HORIZONTAL_SPEED {
@@ -57,7 +54,13 @@ pub fn handle_player_input(
             velocity.y -= 10.0;
         }
     }
+}
 
+pub fn player_attack(
+    player_position: Query<&Position, With<Player>>,
+    mut commands: Commands,
+    mut ev_input: EventReader<InputEvent>,
+) {
     let player_position = player_position.single();
 
     for ev in ev_input.read() {
@@ -79,12 +82,12 @@ pub fn player_collides_coin(
     mut coins: Query<(&CoinKind, &mut Position, &Rectangle), Without<Player>>,
 ) {
     let (mut player_color, mut pos, rect, mut vel) = player.single_mut();
-    let player_hitbox = rect.on_position(&mut *pos);
+    let player_hitbox = rect.on_position(&mut pos);
     for (kind, mut pos, rect) in coins.iter_mut() {
-        let hitbox = rect.on_position(&mut *pos);
+        let hitbox = rect.on_position(&mut pos);
         if player_hitbox.colides_with(&hitbox) {
             match kind {
-                CoinKind::Color(color) => player_color.0 = color.clone(),
+                CoinKind::Color(color) => player_color.0 = *color,
                 CoinKind::Jump(amount) => vel.y = *amount as f64,
             }
         }
