@@ -1,5 +1,6 @@
 use bevy_ecs::schedule::ScheduleLabel;
 
+pub mod camera;
 pub mod components;
 pub mod draw;
 pub mod input;
