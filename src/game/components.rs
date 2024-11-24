@@ -17,9 +17,10 @@ pub struct BulletBundle {
     pub rectangle: Rectangle,
     pub solid: Solid,
     pub color: Colorable,
+    pub bounce: Bounce
 }
 
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Copy, Component, Clone)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
@@ -32,6 +33,16 @@ impl Position {
             y: y.into(),
         }
     }
+    pub fn normalize(mut self) {
+        let magnitude = ((self.x).powi(2) + (self.y).powi(2)).sqrt();
+        if magnitude == 0.0 {
+            self.x = 0.0;
+            self.y = 0.0;
+        } else {
+            self.x = self.x / magnitude;
+            self.y = self.y / magnitude;
+        }
+     }
 }
 
 #[derive(Debug, Default, Component)]
@@ -187,6 +198,20 @@ pub enum SolidSides {
 #[derive(Debug, Clone, Copy, Component)]
 pub struct Solid {
     sides: EnumMap<SolidSides, bool>,
+}
+
+#[derive(Debug, Clone, Copy, Component)]
+pub struct Bounce {
+    pub enabled: bool,
+    pub bounciness: f64,
+}
+impl Bounce {
+    pub fn new<T: Into<f64>>(enabled: bool, bounciness: T) -> Self {
+        Self {
+            enabled: enabled,
+            bounciness: bounciness.into(),
+        }
+    }
 }
 
 impl Solid {

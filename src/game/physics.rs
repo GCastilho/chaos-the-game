@@ -1,5 +1,5 @@
 use super::{
-    components::{CollisionAxis, Gravitable, Position, Rectangle, Solid, Velocity},
+    components::{Bounce, CollisionAxis, Gravitable, Position, Rectangle, Solid, Velocity},
     player::Jump,
     resources::Time,
 };
@@ -48,6 +48,49 @@ pub fn handle_collision_moving_static(
                     }
                     CollisionAxis::Right => {
                         vel.x = 0.0;
+                        hitbox.pos.x = static_hitbox.left() - hitbox.rect.width as f64;
+                    }
+                }
+            }
+        }
+    }
+}
+
+//TODO this could probably be implemented inside handle_collision_moving_static as the code is basicaly equal.
+pub fn handle_bounce_moving_static(
+    mut query_moving: Query<
+        (&mut Position, &Rectangle, &mut Velocity, Option<&mut Jump>, &Bounce),
+        With<Solid>,
+    >,
+    mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
+) {
+    for (mut pos, rec, mut vel, mut jump, mut bounce) in query_moving.iter_mut() {
+        if !bounce.enabled{
+            println!("not bounced");
+            continue;
+        }
+        let hitbox = rec.on_position(&mut pos);
+        for (mut pos, rec) in query_static.iter_mut() {
+            let static_hitbox = rec.on_position(&mut pos);
+            if let Some(axis) = hitbox.colides_with_axis(&static_hitbox) {
+                println!("bounced yeahhh!");
+                match axis {
+                    CollisionAxis::Up => {
+                        vel.y = vel.y * -1.0 * bounce.bounciness;
+                        
+                        hitbox.pos.y = static_hitbox.bottom() - hitbox.rect.height as f64;
+                    }
+                    CollisionAxis::Down => {
+                        vel.y = vel.y * -1.0 * bounce.bounciness;
+
+                        hitbox.pos.y = static_hitbox.top();
+                    }
+                    CollisionAxis::Left => {
+                        vel.x = vel.x * -1.0 * bounce.bounciness;
+                        hitbox.pos.x = static_hitbox.right();
+                    }
+                    CollisionAxis::Right => {
+                        vel.x = vel.x * -1.0 * bounce.bounciness;
                         hitbox.pos.x = static_hitbox.left() - hitbox.rect.width as f64;
                     }
                 }

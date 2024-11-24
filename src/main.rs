@@ -8,7 +8,7 @@ use game::{
         handle_mouse, insert_mouse_resources, insert_mouse_square, update_input_state, InputEvent,
         InputState, MouseLift, MousePress,
     },
-    physics::{gravitate, handle_collision_moving_static, limit_velocity, move_system},
+    physics::{gravitate, handle_collision_moving_static, handle_bounce_moving_static, limit_velocity, move_system},
     player::{handle_player_input, player_attack, player_collides_coin, update_jump_time},
     startup::{init_player_system, Startup},
     Update,
@@ -60,6 +60,7 @@ fn main() -> Result<(), String> {
                 gravitate,
                 limit_velocity,
                 move_system,
+                handle_bounce_moving_static,
                 handle_collision_moving_static,
             )
                 .chain()
