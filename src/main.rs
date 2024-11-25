@@ -1,5 +1,6 @@
 mod game;
 
+use crate::game::camera::Camera;
 use crate::game::resources::Time;
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use game::{
@@ -8,7 +9,10 @@ use game::{
         handle_mouse, insert_mouse_resources, insert_mouse_square, update_input_state, InputEvent,
         InputState, MouseLift, MousePress,
     },
-    physics::{gravitate, handle_collision_moving_static, handle_bounce_moving_static, limit_velocity, move_system},
+    physics::{
+        gravitate, handle_bounce_moving_static, handle_collision_moving_static, limit_velocity,
+        move_system,
+    },
     player::{handle_player_input, player_attack, player_collides_coin, update_jump_time},
     startup::{init_player_system, Startup},
     Update,
@@ -19,7 +23,6 @@ use std::time::Duration;
 const SCREEN_WIDTH: u32 = 900;
 const SCREEN_HEIGHT: u32 = 700;
 
-// TODO: Posição usar float e movimento não ser dependente do frame
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init().expect("Could not init SDL");
     let video_subsystem = sdl_context
@@ -45,6 +48,7 @@ fn main() -> Result<(), String> {
     world.insert_resource(Events::<InputEvent>::default());
     world.insert_resource(Time::new());
     insert_mouse_resources(&mut world);
+    world.init_resource::<Camera>();
 
     Schedule::new(Startup)
         .add_systems(init_player_system)

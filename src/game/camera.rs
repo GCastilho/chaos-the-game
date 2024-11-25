@@ -1,13 +1,14 @@
 use crate::game::components::{Componentable, Position, Rectangle};
 use bevy_ecs::{
     component::Component,
+    system::Resource,
     world::{FromWorld, World},
 };
 use sdl2::pixels::Color;
 use sdl2::render::WindowCanvas;
 
-#[derive(Debug, Component)]
-struct Camera;
+#[derive(Debug, Component, Resource)]
+pub struct Camera;
 
 impl FromWorld for Camera {
     fn from_world(world: &mut World) -> Self {
