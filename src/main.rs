@@ -1,6 +1,6 @@
 mod game;
 
-use crate::game::camera::Camera;
+use crate::game::camera::{move_world, Camera};
 use crate::game::resources::Time;
 use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
 use game::{
@@ -72,7 +72,8 @@ fn main() -> Result<(), String> {
         )
         .add_systems(player_collides_coin)
         .add_systems(update_jump_time)
-        .add_systems((handle_mouse, insert_mouse_square));
+        .add_systems((handle_mouse, insert_mouse_square))
+        .add_systems(move_world.after(handle_player_input));
 
     let mut render_scheduler = Schedule::new(Render);
     render_scheduler.add_systems(draw);
