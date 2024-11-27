@@ -59,13 +59,19 @@ pub fn handle_collision_moving_static(
 //TODO this could probably be implemented inside handle_collision_moving_static as the code is basicaly equal.
 pub fn handle_bounce_moving_static(
     mut query_moving: Query<
-        (&mut Position, &Rectangle, &mut Velocity, Option<&mut Jump>, &Bounce),
+        (
+            &mut Position,
+            &Rectangle,
+            &mut Velocity,
+            Option<&mut Jump>,
+            &Bounce,
+        ),
         With<Solid>,
     >,
     mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
     for (mut pos, rec, mut vel, mut jump, mut bounce) in query_moving.iter_mut() {
-        if !bounce.enabled{
+        if !bounce.enabled {
             println!("not bounced");
             continue;
         }
@@ -77,7 +83,7 @@ pub fn handle_bounce_moving_static(
                 match axis {
                     CollisionAxis::Up => {
                         vel.y = vel.y * -1.0 * bounce.bounciness;
-                        
+
                         hitbox.pos.y = static_hitbox.bottom() - hitbox.rect.height as f64;
                     }
                     CollisionAxis::Down => {
@@ -130,6 +136,5 @@ pub fn move_system(mut query: Query<(&mut Position, &Velocity)>, time: Res<Time>
     for (mut pos, vel) in query.iter_mut() {
         pos.x += vel.x * delta;
         pos.y += vel.y * delta;
-        println!("{:?} {:?}", pos, vel);
     }
 }
