@@ -1,9 +1,11 @@
-mod hitbox;
+pub mod hitbox;
 
-use bevy_ecs::{bundle::Bundle, prelude::Component, world::Mut};
+use bevy_ecs::{bundle::Bundle, prelude::Component};
 use enum_map::EnumMap;
+use hitbox::HitboxBorrowedMut;
 use sdl2::pixels::Color;
-use std::cmp::Ordering::*;
+
+pub use hitbox::{CollisionAxis, Hitbox};
 
 #[derive(Component)]
 pub struct Player;
@@ -76,77 +78,12 @@ impl Rectangle {
         Self { width, height }
     }
 
-    pub fn on_position<'a>(&'a self, position: &'a mut Position) -> Hitbox<'a> {
-        Hitbox {
+    pub fn on_position<'a>(&'a self, position: &'a mut Position) -> Hitbox<HitboxBorrowedMut<'a>> {
+        let hitbox = HitboxBorrowedMut {
             rect: self,
             pos: position,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum CollisionAxis {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-// TODO: Seria interessante se tivesse como post ser mutável ou não dependendo de como ela é inicializada
-pub struct Hitbox<'a> {
-    pub pos: &'a mut Position,
-    pub rect: &'a Rectangle,
-}
-
-impl<'a> Hitbox<'a> {
-    pub fn left(&self) -> f64 {
-        self.pos.x
-    }
-
-    pub fn right(&self) -> f64 {
-        self.pos.x + self.rect.width as f64
-    }
-
-    pub fn top(&self) -> f64 {
-        self.pos.y + self.rect.height as f64
-    }
-
-    pub fn bottom(&self) -> f64 {
-        self.pos.y
-    }
-
-    pub fn colides_with(&self, other: &'a Hitbox<'a>) -> bool {
-        self.left() < other.right()
-            && self.right() > other.left()
-            && self.bottom() < other.top()
-            && self.top() > other.bottom()
-    }
-
-    pub fn colides_with_axis(&self, other: &Hitbox) -> Option<CollisionAxis> {
-        if !self.colides_with(other) {
-            return None;
-        }
-
-        let y_up = self.top() - other.bottom();
-        let y_down = other.top() - self.bottom();
-        let x_right = self.right() - other.left();
-        let x_left = other.right() - self.left();
-
-        let (y_axis, y_value) = match y_up.total_cmp(&y_down) {
-            Greater | Equal => (CollisionAxis::Down, y_down),
-            Less => (CollisionAxis::Up, y_up),
         };
-
-        let (x_axis, x_value) = match x_left.total_cmp(&x_right) {
-            Greater | Equal => (CollisionAxis::Right, x_right),
-            Less => (CollisionAxis::Left, x_left),
-        };
-
-        match y_value.total_cmp(&x_value) {
-            Greater => Some(x_axis),
-            Less => Some(y_axis),
-            Equal => None,
-        }
+        Hitbox::new(hitbox)
     }
 }
 

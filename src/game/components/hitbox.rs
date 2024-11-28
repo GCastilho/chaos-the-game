@@ -1,8 +1,17 @@
-use super::{CollisionAxis, Position, Rectangle};
+use super::{Position, Rectangle};
+use bevy_ecs::change_detection::Mut;
 use std::{
     cmp::Ordering::{Equal, Greater, Less},
     ops::{Deref, DerefMut},
 };
+
+#[derive(Debug)]
+pub enum CollisionAxis {
+    Up,
+    Down,
+    Left,
+    Right,
+}
 
 pub trait RectInPosition {
     fn pos(&self) -> &Position;

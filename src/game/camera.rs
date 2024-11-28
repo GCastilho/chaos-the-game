@@ -1,4 +1,7 @@
-use crate::game::components::{CollisionAxis, Hitbox, Player, Position, Rectangle};
+use crate::game::components::{
+    hitbox::{HitboxBorrowedMut, RectInPosition},
+    CollisionAxis, Hitbox, Player, Position, Rectangle,
+};
 use bevy_ecs::{
     component::Component,
     query::{With, Without},
@@ -17,7 +20,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn hitbox(&mut self) -> Hitbox {
+    pub fn hitbox(&mut self) -> Hitbox<HitboxBorrowedMut> {
         self.rect.on_position(&mut self.pos)
     }
 }
@@ -37,12 +40,12 @@ impl FromWorld for Camera {
     }
 }
 
-trait ColidesInverted {
-    fn colides_with_axis_inverted(&self, other: &Hitbox) -> Option<CollisionAxis>;
+trait ColidesInverted<T: RectInPosition> {
+    fn colides_with_axis_inverted(&self, other: &Hitbox<T>) -> Option<CollisionAxis>;
 }
 
-impl ColidesInverted for Hitbox<'_> {
-    fn colides_with_axis_inverted(&self, other: &Hitbox) -> Option<CollisionAxis> {
+impl<T: RectInPosition> ColidesInverted<T> for Hitbox<T> {
+    fn colides_with_axis_inverted(&self, other: &Hitbox<T>) -> Option<CollisionAxis> {
         if self.right() > other.right() {
             Some(CollisionAxis::Right)
         } else if self.left() < other.left() {
@@ -64,7 +67,7 @@ pub fn move_camera(
 ) {
     let (mut pos, rect) = player_query.single_mut();
     let player = rect.on_position(&mut pos);
-    let camera = camera.hitbox();
+    let mut camera = camera.hitbox();
 
     let Some(axis) = player.colides_with_axis_inverted(&camera) else {
         return;
@@ -89,7 +92,7 @@ pub fn move_world(
     mut query: Query<&mut Position, (Without<CameraHitbox>, Without<Player>)>,
 ) {
     let (mut pos, rect) = player.single_mut();
-    let player = rect.on_position(&mut pos);
+    let mut player = rect.on_position(&mut pos);
     let (mut pos, rect) = camera.single_mut();
     let camera = rect.on_position(&mut pos);
 
