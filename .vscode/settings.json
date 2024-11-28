@@ -1,0 +1,12 @@
+{
+	"terminal.integrated.defaultProfile.windows": "Windows PowerShell",
+	"[rust]": {
+		"editor.defaultFormatter": "rust-lang.rust-analyzer",
+		"editor.formatOnSave": true,
+		"editor.insertSpaces": true,
+		"editor.tabSize": 4,
+		"editor.rulers": [
+			100
+		]
+	}
+}

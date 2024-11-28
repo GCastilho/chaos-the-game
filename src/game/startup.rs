@@ -5,8 +5,7 @@ use super::{
     physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
-use bevy_ecs::schedule::ScheduleLabel;
-use bevy_ecs::system::Commands;
+use bevy_ecs::{schedule::ScheduleLabel, system::Commands};
 use sdl2::pixels::Color;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, ScheduleLabel)]

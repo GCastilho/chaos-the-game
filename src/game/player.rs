@@ -1,7 +1,7 @@
 use super::{
     components::{
-        Bullet, BulletBundle, CoinKind, Colorable, Componentable, Player, Position, Rectangle, 
-        Solid, Velocity, Bounce,
+        Bounce, Bullet, BulletBundle, CoinKind, Colorable, Componentable, Player, Position,
+        Rectangle, Solid, Velocity,
     },
     input::{Action, InputEvent, InputState},
     physics::{
@@ -11,11 +11,11 @@ use super::{
     resources::Time,
 };
 use bevy_ecs::{
-    change_detection::Res, 
-    entity::Entity, 
-    event::EventReader, 
-    prelude::{Component, Query}, 
-    query::{With, Without}, 
+    change_detection::Res,
+    entity::Entity,
+    event::EventReader,
+    prelude::{Component, Query},
+    query::{With, Without},
     system::Commands,
 };
 use std::{
@@ -77,21 +77,27 @@ pub fn player_attack(
                 rectangle: Rectangle::new(10, 10),
                 solid: Solid::all(),
                 color: sdl2::pixels::Color::RED.into_fill(),
-                bounce: Bounce::new( true, 1.0),
+                bounce: Bounce::new(true, 1.0),
             });
 
             if let Some(bullet_entity) = query2.iter().next() {
                 // let mut b_pos = bullet_entity.1;
                 let b_rec = bullet_entity.2;
-                let b_pos = &Position::new( bullet_entity.1.x + b_rec.width as f64 /2.0, bullet_entity.1.y + b_rec.width as f64/2.0); 
-                let p_pos = Position::new( player_position.x + player_rec.width as f64 /2.0, player_position.y + player_rec.height as f64 /2.0 );
+                let b_pos = &Position::new(
+                    bullet_entity.1.x + b_rec.width as f64 / 2.0,
+                    bullet_entity.1.y + b_rec.width as f64 / 2.0,
+                );
+                let p_pos = Position::new(
+                    player_position.x + player_rec.width as f64 / 2.0,
+                    player_position.y + player_rec.height as f64 / 2.0,
+                );
                 let distance = ((p_pos.x - b_pos.x).powi(2) + (p_pos.y - b_pos.y).powi(2)).sqrt();
 
                 let vector = Position::new(p_pos.x - b_pos.x, p_pos.y - b_pos.y);
                 vector.normalize();
                 if distance < 200.0 {
-                    player_velocity.x = vector.x * (2.0 as f64).powf(20.0 - distance/10.0);
-                    player_velocity.y = vector.y * (2.0 as f64).powf(20.0 - distance/10.0);
+                    player_velocity.x = vector.x * (2.0 as f64).powf(20.0 - distance / 10.0);
+                    player_velocity.y = vector.y * (2.0 as f64).powf(20.0 - distance / 10.0);
                 }
                 commands.entity(bullet_entity.0).despawn(); // Despawn the first matching entity
 

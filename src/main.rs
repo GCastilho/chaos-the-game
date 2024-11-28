@@ -1,8 +1,14 @@
 mod game;
 
-use crate::game::camera::{move_camera, Camera};
-use crate::game::resources::Time;
-use bevy_ecs::{event::Events, prelude::Schedule, prelude::*, world::World};
+use crate::game::{
+    camera::{move_camera, Camera},
+    resources::Time,
+};
+use bevy_ecs::{
+    event::Events,
+    prelude::{Schedule, *},
+    world::World,
+};
 use game::{
     draw::{draw, Render},
     input::{
