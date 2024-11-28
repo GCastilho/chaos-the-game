@@ -1,9 +1,8 @@
 use crate::game::components::{CollisionAxis, Hitbox, Player, Position, Rectangle};
-use bevy_ecs::system::ResMut;
 use bevy_ecs::{
     component::Component,
     query::{With, Without},
-    system::{Query, Resource},
+    system::{Query, ResMut, Resource},
     world::{FromWorld, World},
 };
 use sdl2::render::WindowCanvas;

@@ -1,4 +1,6 @@
-use bevy_ecs::{bundle::Bundle, prelude::Component};
+mod hitbox;
+
+use bevy_ecs::{bundle::Bundle, prelude::Component, world::Mut};
 use enum_map::EnumMap;
 use sdl2::pixels::Color;
 use std::cmp::Ordering::*;
@@ -17,10 +19,10 @@ pub struct BulletBundle {
     pub rectangle: Rectangle,
     pub solid: Solid,
     pub color: Colorable,
-    pub bounce: Bounce
+    pub bounce: Bounce,
 }
 
-#[derive(Debug, Copy, Component, Clone)]
+#[derive(Debug, Copy, Component, Clone, PartialEq)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
@@ -42,7 +44,7 @@ impl Position {
             self.x = self.x / magnitude;
             self.y = self.y / magnitude;
         }
-     }
+    }
 }
 
 #[derive(Debug, Default, Component)]
@@ -63,7 +65,7 @@ impl Velocity {
 #[derive(Debug, Component)]
 pub struct Gravitable;
 
-#[derive(Debug, Clone, Copy, Component)]
+#[derive(Debug, Clone, Copy, Component, PartialEq)]
 pub struct Rectangle {
     pub width: u32,
     pub height: u32,
