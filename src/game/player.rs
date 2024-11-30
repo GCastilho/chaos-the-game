@@ -110,13 +110,13 @@ pub fn player_attack(
 }
 
 pub fn player_collides_coin(
-    mut player: Query<(&mut Colorable, &mut Position, &Rectangle, &mut Velocity), With<Player>>,
-    mut coins: Query<(&CoinKind, &mut Position, &Rectangle), Without<Player>>,
+    mut player: Query<(&mut Colorable, &Position, &Rectangle, &mut Velocity), With<Player>>,
+    mut coins: Query<(&CoinKind, &Position, &Rectangle), Without<Player>>,
 ) {
-    let (mut player_color, mut pos, rect, mut vel) = player.single_mut();
-    let player_hitbox = rect.on_position(&mut pos);
-    for (kind, mut pos, rect) in coins.iter_mut() {
-        let hitbox = rect.on_position(&mut pos);
+    let (mut player_color, pos, rect, mut vel) = player.single_mut();
+    let player_hitbox = rect.on_position(pos);
+    for (kind, pos, rect) in coins.iter_mut() {
+        let hitbox = rect.on_position(pos);
         if player_hitbox.colides_with(&hitbox) {
             match kind {
                 CoinKind::Color(color) => player_color.color = *color,

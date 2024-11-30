@@ -23,12 +23,12 @@ pub fn handle_collision_moving_static(
         (&mut Position, &Rectangle, &mut Velocity, Option<&mut Jump>),
         With<Solid>,
     >,
-    mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
+    mut query_static: Query<(&Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
     for (mut pos, rec, mut vel, mut jump) in query_moving.iter_mut() {
-        let mut hitbox = rec.on_position(&mut pos);
-        for (mut pos, rec) in query_static.iter_mut() {
-            let static_hitbox = rec.on_position(&mut pos);
+        let mut hitbox = rec.on_position_mut(&mut pos);
+        for (pos, rec) in query_static.iter_mut() {
+            let static_hitbox = rec.on_position(pos);
             if let Some(axis) = hitbox.colides_with_axis(&static_hitbox) {
                 match axis {
                     CollisionAxis::Up => {
@@ -68,16 +68,16 @@ pub fn handle_bounce_moving_static(
         ),
         With<Solid>,
     >,
-    mut query_static: Query<(&mut Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
+    mut query_static: Query<(&Position, &Rectangle), (With<Solid>, Without<Velocity>)>,
 ) {
     for (mut pos, rec, mut vel, mut jump, mut bounce) in query_moving.iter_mut() {
         if !bounce.enabled {
             println!("not bounced");
             continue;
         }
-        let mut hitbox = rec.on_position(&mut pos);
-        for (mut pos, rec) in query_static.iter_mut() {
-            let static_hitbox = rec.on_position(&mut pos);
+        let mut hitbox = rec.on_position_mut(&mut pos);
+        for (pos, rec) in query_static.iter_mut() {
+            let static_hitbox = rec.on_position(pos);
             if let Some(axis) = hitbox.colides_with_axis(&static_hitbox) {
                 println!("bounced yeahhh!");
                 match axis {

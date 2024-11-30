@@ -13,18 +13,35 @@ pub enum CollisionAxis {
     Right,
 }
 
+#[derive(Debug)]
+pub struct Hitbox<T>(T);
+
+impl<T> Hitbox<T> {
+    pub fn new(hitbox: T) -> Self {
+        Hitbox(hitbox)
+    }
+}
+
+impl<T> Deref for Hitbox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Hitbox<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 pub trait RectInPosition {
     fn pos(&self) -> &Position;
     fn rect(&self) -> &Rectangle;
 }
 
-pub struct Hitbox<T: RectInPosition>(T);
-
 impl<T: RectInPosition> Hitbox<T> {
-    pub fn new(rect_in_position: T) -> Self {
-        Hitbox(rect_in_position)
-    }
-
     pub fn left(&self) -> f64 {
         self.pos().x
     }
@@ -76,27 +93,13 @@ impl<T: RectInPosition> Hitbox<T> {
     }
 }
 
-impl<T: RectInPosition> Deref for Hitbox<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+#[derive(Debug)]
+pub struct HitboxOwned<'a> {
+    pub pos: Mut<'a, Position>,
+    pub rect: &'a Rectangle,
 }
 
-impl<T: RectInPosition> DerefMut for Hitbox<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct HitboxOwned {
-    pos: Position,
-    rect: Rectangle,
-}
-
-impl RectInPosition for HitboxOwned {
+impl<'a> RectInPosition for HitboxOwned<'a> {
     fn pos(&self) -> &Position {
         &self.pos
     }
@@ -138,20 +141,42 @@ impl<'a> RectInPosition for HitboxBorrowedMut<'a> {
     }
 }
 
+pub trait ToHitbox<T: RectInPosition> {
+    fn hitbox(&self) -> Hitbox<T>;
+}
+
+pub trait ToHitboxMut<'a> {
+    fn hitbox_mut(&'a mut self) -> Hitbox<HitboxBorrowedMut<'a>>;
+}
+
+pub trait IntoHitbox<T: RectInPosition> {
+    fn into_hitbox(self) -> Hitbox<T>;
+}
+
+impl<'a> ToHitbox<HitboxBorrowed<'a>> for (&'a Position, &'a Rectangle) {
+    fn hitbox(&self) -> Hitbox<HitboxBorrowed<'a>> {
+        let (pos, rect) = *self;
+        Hitbox(HitboxBorrowed { pos, rect })
+    }
+}
+
+impl<'a> ToHitboxMut<'a> for (Mut<'a, Position>, &'a Rectangle) {
+    fn hitbox_mut(&'a mut self) -> Hitbox<HitboxBorrowedMut<'a>> {
+        let (ref mut pos, rect) = self;
+        Hitbox(HitboxBorrowedMut { pos, rect })
+    }
+}
+
+impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, &'a Rectangle) {
+    fn into_hitbox(self) -> Hitbox<HitboxOwned<'a>> {
+        let (pos, rect) = self;
+        Hitbox(HitboxOwned { pos, rect })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn hitbox_owned() {
-        let owned = HitboxOwned {
-            pos: Position::new(69, 420),
-            rect: Rectangle::new(42, 55),
-        };
-        let hitbox = Hitbox(owned.clone());
-        assert_eq!(hitbox.rect, owned.rect);
-        assert_eq!(*hitbox.pos(), owned.pos);
-    }
 
     #[test]
     fn hitbox_borrowed() {

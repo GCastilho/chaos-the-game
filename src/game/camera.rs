@@ -1,5 +1,5 @@
 use crate::game::components::{
-    hitbox::{HitboxBorrowedMut, RectInPosition},
+    hitbox::{HitboxBorrowedMut, RectInPosition, ToHitbox},
     CollisionAxis, Hitbox, Player, Position, Rectangle,
 };
 use bevy_ecs::{
@@ -21,7 +21,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn hitbox(&mut self) -> Hitbox<HitboxBorrowedMut> {
-        self.rect.on_position(&mut self.pos)
+        self.rect.on_position_mut(&mut self.pos)
     }
 }
 
@@ -41,11 +41,17 @@ impl FromWorld for Camera {
 }
 
 trait ColidesInverted<T: RectInPosition> {
-    fn colides_with_axis_inverted(&self, other: &Hitbox<T>) -> Option<CollisionAxis>;
+    fn colides_with_axis_inverted<R: RectInPosition>(
+        &self,
+        other: &Hitbox<R>,
+    ) -> Option<CollisionAxis>;
 }
 
 impl<T: RectInPosition> ColidesInverted<T> for Hitbox<T> {
-    fn colides_with_axis_inverted(&self, other: &Hitbox<T>) -> Option<CollisionAxis> {
+    fn colides_with_axis_inverted<R: RectInPosition>(
+        &self,
+        other: &Hitbox<R>,
+    ) -> Option<CollisionAxis> {
         if self.right() > other.right() {
             Some(CollisionAxis::Right)
         } else if self.left() < other.left() {
@@ -63,10 +69,9 @@ impl<T: RectInPosition> ColidesInverted<T> for Hitbox<T> {
 pub fn move_camera(
     mut camera: ResMut<Camera>,
     // mut camera_hitbox_query: Query<(&mut Position, &Rectangle), With<CameraHitbox>>,
-    mut player_query: Query<(&mut Position, &Rectangle), (With<Player>, Without<CameraHitbox>)>,
+    player: Query<(&Position, &Rectangle), (With<Player>, Without<CameraHitbox>)>,
 ) {
-    let (mut pos, rect) = player_query.single_mut();
-    let player = rect.on_position(&mut pos);
+    let player = player.single().hitbox();
     let mut camera = camera.hitbox();
 
     let Some(axis) = player.colides_with_axis_inverted(&camera) else {
@@ -92,9 +97,9 @@ pub fn move_world(
     mut query: Query<&mut Position, (Without<CameraHitbox>, Without<Player>)>,
 ) {
     let (mut pos, rect) = player.single_mut();
-    let mut player = rect.on_position(&mut pos);
+    let mut player = rect.on_position_mut(&mut pos);
     let (mut pos, rect) = camera.single_mut();
-    let camera = rect.on_position(&mut pos);
+    let camera = rect.on_position_mut(&mut pos);
 
     let Some(axis) = player.colides_with_axis_inverted(&camera) else {
         return;

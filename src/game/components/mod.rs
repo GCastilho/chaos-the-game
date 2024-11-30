@@ -5,6 +5,7 @@ use enum_map::EnumMap;
 use hitbox::HitboxBorrowedMut;
 use sdl2::pixels::Color;
 
+use crate::game::components::hitbox::HitboxBorrowed;
 pub use hitbox::{CollisionAxis, Hitbox};
 
 #[derive(Component)]
@@ -78,7 +79,18 @@ impl Rectangle {
         Self { width, height }
     }
 
-    pub fn on_position<'a>(&'a self, position: &'a mut Position) -> Hitbox<HitboxBorrowedMut<'a>> {
+    pub fn on_position<'a>(&'a self, position: &'a Position) -> Hitbox<HitboxBorrowed<'a>> {
+        let hitbox = HitboxBorrowed {
+            rect: self,
+            pos: position,
+        };
+        Hitbox::new(hitbox)
+    }
+
+    pub fn on_position_mut<'a>(
+        &'a self,
+        position: &'a mut Position,
+    ) -> Hitbox<HitboxBorrowedMut<'a>> {
         let hitbox = HitboxBorrowedMut {
             rect: self,
             pos: position,
