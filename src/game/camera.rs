@@ -90,33 +90,3 @@ pub fn move_camera(
     camera.pos.y += delta.1;
     println!("Camera moved: {:?}", camera.pos);
 }
-
-pub fn move_world(
-    mut camera: Query<(&mut Position, &Rectangle), With<CameraHitbox>>,
-    mut player: Query<(&mut Position, &Rectangle), (With<Player>, Without<CameraHitbox>)>,
-    mut query: Query<&mut Position, (Without<CameraHitbox>, Without<Player>)>,
-) {
-    let (mut pos, rect) = player.single_mut();
-    let mut player = rect.on_position_mut(&mut pos);
-    let (mut pos, rect) = camera.single_mut();
-    let camera = rect.on_position_mut(&mut pos);
-
-    let Some(axis) = player.colides_with_axis_inverted(&camera) else {
-        return;
-    };
-
-    let delta = match axis {
-        CollisionAxis::Up => (0.0, camera.top() - player.top()),
-        CollisionAxis::Down => (0.0, camera.bottom() - player.bottom()),
-        CollisionAxis::Left => (camera.left() - player.left(), 0.0),
-        CollisionAxis::Right => (camera.right() - player.right(), 0.0),
-    };
-
-    player.pos.x += delta.0;
-    player.pos.y += delta.1;
-
-    for mut pos in query.iter_mut() {
-        pos.x += delta.0;
-        pos.y += delta.1;
-    }
-}

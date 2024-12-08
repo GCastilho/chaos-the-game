@@ -1,5 +1,5 @@
 use super::{Position, Rectangle};
-use bevy_ecs::change_detection::Mut;
+use bevy_ecs::{change_detection::Mut, entity::Entity};
 use std::{
     cmp::Ordering::{Equal, Greater, Less},
     ops::{Deref, DerefMut},
@@ -56,6 +56,12 @@ impl<T: RectInPosition> Hitbox<T> {
 
     pub fn bottom(&self) -> f64 {
         self.pos().y
+    }
+
+    pub fn center(&self) -> Position {
+        let x = self.pos().x + (self.rect().width as f64 / 2.0);
+        let y = self.pos().y + (self.rect().height as f64 / 2.0);
+        Position { x, y }
     }
 
     pub fn colides_with<R: RectInPosition>(&self, other: &Hitbox<R>) -> bool {
@@ -141,7 +147,7 @@ impl<'a> RectInPosition for HitboxBorrowedMut<'a> {
     }
 }
 
-pub trait ToHitbox<T: RectInPosition> {
+pub trait ToHitbox<T> {
     fn hitbox(&self) -> Hitbox<T>;
 }
 
@@ -149,7 +155,7 @@ pub trait ToHitboxMut<'a> {
     fn hitbox_mut(&'a mut self) -> Hitbox<HitboxBorrowedMut<'a>>;
 }
 
-pub trait IntoHitbox<T: RectInPosition> {
+pub trait IntoHitbox<T> {
     fn into_hitbox(self) -> Hitbox<T>;
 }
 
@@ -171,6 +177,13 @@ impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, &'a Rectangle) {
     fn into_hitbox(self) -> Hitbox<HitboxOwned<'a>> {
         let (pos, rect) = self;
         Hitbox(HitboxOwned { pos, rect })
+    }
+}
+
+impl<'a> ToHitbox<HitboxBorrowed<'a>> for (Entity, &'a Position, &'a Rectangle) {
+    fn hitbox(&self) -> Hitbox<HitboxBorrowed<'a>> {
+        let (_, pos, rect) = *self;
+        Hitbox(HitboxBorrowed { pos, rect })
     }
 }
 

@@ -25,7 +25,7 @@ pub struct BulletBundle {
     pub bounce: Bounce,
 }
 
-#[derive(Debug, Copy, Component, Clone, PartialEq)]
+#[derive(Debug, Component, Clone, PartialEq)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
@@ -38,15 +38,32 @@ impl Position {
             y: y.into(),
         }
     }
-    pub fn normalize(mut self) {
-        let magnitude = ((self.x).powi(2) + (self.y).powi(2)).sqrt();
+}
+
+pub struct Normal {
+    x: f64,
+    y: f64,
+}
+
+impl Normal {
+    pub fn new(x: f64, y: f64) -> Self {
+        let magnitude = (x.powi(2) + y.powi(2)).sqrt();
         if magnitude == 0.0 {
-            self.x = 0.0;
-            self.y = 0.0;
+            Self { x: 0.0, y: 0.0 }
         } else {
-            self.x = self.x / magnitude;
-            self.y = self.y / magnitude;
+            Self {
+                x: x / magnitude,
+                y: y / magnitude,
+            }
         }
+    }
+
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub fn y(&self) -> f64 {
+        self.y
     }
 }
 
