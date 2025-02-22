@@ -4,6 +4,7 @@ pub mod camera;
 pub mod components;
 pub mod draw;
 pub mod input;
+mod map;
 pub mod physics;
 pub mod player;
 pub mod resources;

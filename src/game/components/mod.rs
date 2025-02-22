@@ -1,12 +1,12 @@
 pub mod hitbox;
 
+use crate::game::components::hitbox::HitboxBorrowed;
 use bevy_ecs::{bundle::Bundle, prelude::Component};
 use enum_map::EnumMap;
 use hitbox::HitboxBorrowedMut;
-use sdl2::pixels::Color;
-
-use crate::game::components::hitbox::HitboxBorrowed;
 pub use hitbox::{CollisionAxis, Hitbox};
+use sdl2::pixels::Color;
+use serde::Deserialize;
 
 #[derive(Component)]
 pub struct Player;
@@ -25,7 +25,7 @@ pub struct BulletBundle {
     pub bounce: Bounce,
 }
 
-#[derive(Debug, Component, Clone, PartialEq)]
+#[derive(Debug, Component, Clone, PartialEq, Deserialize)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
@@ -85,7 +85,7 @@ impl Velocity {
 #[derive(Debug, Component)]
 pub struct Gravitable;
 
-#[derive(Debug, Clone, Copy, Component, PartialEq)]
+#[derive(Debug, Clone, Copy, Component, PartialEq, Deserialize)]
 pub struct Rectangle {
     pub width: u32,
     pub height: u32,

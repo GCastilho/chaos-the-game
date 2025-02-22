@@ -20,14 +20,14 @@ use game::{
         move_system,
     },
     player::{handle_player_input, player_attack, player_collides_coin, update_jump_time},
-    startup::{init_player_system, Startup},
+    startup::{init_map_system, Startup},
     Update,
 };
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, render::WindowCanvas};
 use std::time::Duration;
 
-const SCREEN_WIDTH: u32 = 900;
-const SCREEN_HEIGHT: u32 = 700;
+const SCREEN_WIDTH: u32 = 800;
+const SCREEN_HEIGHT: u32 = 600;
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init().expect("Could not init SDL");
@@ -38,7 +38,8 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        // .position(-1010, 295)
+        .position(-1010, 295)
+        // .position(1850, 85)
         .build()
         .expect("Failed to build main window");
 
@@ -57,7 +58,7 @@ fn main() -> Result<(), String> {
     world.init_resource::<Camera>();
 
     Schedule::new(Startup)
-        .add_systems(init_player_system)
+        .add_systems(init_map_system)
         .run(&mut world);
 
     // TODO: Struct com todos os schedulers que roda todos automaticamente

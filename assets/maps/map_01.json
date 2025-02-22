@@ -1,0 +1,63 @@
+[
+  {
+    "entity": "player",
+    "position": {
+      "x": 250,
+      "y": 600
+    },
+    "rectangle": {
+      "width": 50,
+      "height": 50
+    },
+    "color": "blue"
+  },
+  {
+    "entity": "static",
+    "position": {
+      "x": 100,
+      "y": 100
+    },
+    "rectangle": {
+      "width": 400,
+      "height": 10
+    },
+    "color": "green"
+  },
+  {
+    "entity": "coin",
+    "position": {
+      "x": 120,
+      "y": 115
+    },
+    "rectangle": {
+      "width": 10,
+      "height": 10
+    },
+    "color": "magenta"
+  },
+  {
+    "entity": "coin",
+    "position": {
+      "x": 470,
+      "y": 115
+    },
+    "rectangle": {
+      "width": 10,
+      "height": 10
+    },
+    "color": "red"
+  },
+  {
+    "entity": "coin",
+    "position": {
+      "x": 300,
+      "y": 115
+    },
+    "rectangle": {
+      "width": 10,
+      "height": 10
+    },
+    "color": "cyan",
+    "jump": 3.0
+  }
+]
