@@ -9,6 +9,7 @@ use bevy_ecs::{
     prelude::{Schedule, *},
     world::World,
 };
+use dotenv::dotenv;
 use game::{
     draw::{draw, Render},
     input::{
@@ -30,6 +31,16 @@ const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
 fn main() -> Result<(), String> {
+    dotenv().ok();
+    let position_x = dotenv::var("POSITION_X")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or_default();
+    let position_y = dotenv::var("POSITION_Y")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or_default();
+
     let sdl_context = sdl2::init().expect("Could not init SDL");
     let video_subsystem = sdl_context
         .video()
@@ -38,8 +49,7 @@ fn main() -> Result<(), String> {
     let window = video_subsystem
         .window("A Rust Game", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
-        .position(-1010, 295)
-        // .position(1850, 85)
+        .position(position_x, position_y)
         .build()
         .expect("Failed to build main window");
 
