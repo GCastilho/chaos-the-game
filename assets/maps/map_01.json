@@ -21,12 +21,12 @@
   {
     "entity": "kill_zone",
     "position": {
-      "x": -100,
-      "y": -2025
+      "x": 150,
+      "y": 115
     },
     "rectangle": {
-      "width": 2000,
-      "height": 2100
+      "width": 50,
+      "height": 50
     }
   },
   {

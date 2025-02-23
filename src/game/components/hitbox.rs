@@ -1,4 +1,4 @@
-use super::{Position, Rectangle};
+use super::{Position, Rectangle, Velocity};
 use bevy_ecs::{change_detection::Mut, entity::Entity};
 use std::{
     cmp::Ordering::{Equal, Greater, Less},
@@ -102,10 +102,27 @@ impl<T: RectInPosition> Hitbox<T> {
 #[derive(Debug)]
 pub struct HitboxOwned<'a> {
     pub pos: Mut<'a, Position>,
-    pub rect: Mut<'a, Rectangle>,
+    pub rect: &'a Rectangle,
 }
 
 impl<'a> RectInPosition for HitboxOwned<'a> {
+    fn pos(&self) -> &Position {
+        &self.pos
+    }
+
+    fn rect(&self) -> &Rectangle {
+        &self.rect
+    }
+}
+
+#[derive(Debug)]
+pub struct HitboxOwnedWithVelocity<'a> {
+    pub pos: Mut<'a, Position>,
+    pub rect: &'a Rectangle,
+    pub velocity: Mut<'a, Velocity>,
+}
+
+impl<'a> RectInPosition for HitboxOwnedWithVelocity<'a> {
     fn pos(&self) -> &Position {
         &self.pos
     }
@@ -173,10 +190,23 @@ impl<'a> ToHitboxMut<'a> for (Mut<'a, Position>, &'a Rectangle) {
     }
 }
 
-impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, Mut<'a, Rectangle>) {
+impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, &'a Rectangle) {
     fn into_hitbox(self) -> Hitbox<HitboxOwned<'a>> {
         let (pos, rect) = self;
         Hitbox(HitboxOwned { pos, rect })
+    }
+}
+
+impl<'a> IntoHitbox<HitboxOwnedWithVelocity<'a>>
+    for (Mut<'a, Position>, &'a Rectangle, Mut<'a, Velocity>)
+{
+    fn into_hitbox(self) -> Hitbox<HitboxOwnedWithVelocity<'a>> {
+        let (pos, rect, velocity) = self;
+        Hitbox(HitboxOwnedWithVelocity {
+            pos,
+            rect,
+            velocity,
+        })
     }
 }
 

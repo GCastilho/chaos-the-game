@@ -1,6 +1,6 @@
 pub mod hitbox;
 
-use crate::game::components::hitbox::HitboxBorrowed;
+use crate::game::components::hitbox::{HitboxBorrowed, RectInPosition};
 use bevy_ecs::{bundle::Bundle, prelude::Component};
 use enum_map::EnumMap;
 use hitbox::HitboxBorrowedMut;
@@ -155,9 +155,9 @@ pub enum CoinKind {
     Jump(u32),
 }
 
-#[derive(Debug, enum_map::Enum, Deserialize)]
+#[derive(Debug, enum_map::Enum, Deserialize, PartialEq)]
 #[serde(rename = "lowercase")]
-pub enum SolidSides {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -166,7 +166,7 @@ pub enum SolidSides {
 
 #[derive(Debug, Clone, Copy, Component)]
 pub struct Solid {
-    sides: EnumMap<SolidSides, bool>,
+    sides: EnumMap<Direction, bool>,
 }
 
 #[derive(Debug, Clone, Copy, Component)]
@@ -197,3 +197,20 @@ impl Solid {
 
 #[derive(Debug, Component)]
 pub struct KillZone;
+
+#[derive(Debug, Component)]
+pub struct InfiniteArea {
+    pub start: f64,
+    pub direction: Direction,
+}
+
+impl InfiniteArea {
+    pub fn collides_with<T: RectInPosition>(&self, hitbox: &Hitbox<T>) -> bool {
+        match self.direction {
+            Direction::Up => hitbox.top() > self.start,
+            Direction::Down => hitbox.bottom() < self.start,
+            Direction::Left => hitbox.left() < self.start,
+            Direction::Right => hitbox.right() > self.start,
+        }
+    }
+}

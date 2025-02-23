@@ -5,7 +5,7 @@ use super::{
     physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
-use crate::game::components::{KillZone, SolidSides};
+use crate::game::components::{Direction, InfiniteArea, KillZone};
 use bevy_ecs::prelude::Commands;
 use sdl2::pixels::Color;
 use serde::{Deserialize, Deserializer};
@@ -60,7 +60,7 @@ pub enum KillZoneType {
     },
     Infinite {
         start: f64,
-        direction: SolidSides,
+        direction: Direction,
     },
 }
 
@@ -137,7 +137,10 @@ impl Entity {
                         Color::RGBA(255, 0, 0, 64).into_fill(),
                     ));
                 }
-                KillZoneType::Infinite { .. } => todo!(),
+                KillZoneType::Infinite { start, direction } => {
+                    let infinite_area = InfiniteArea { start, direction };
+                    commands.spawn((KillZone, infinite_area));
+                }
             },
         }
     }

@@ -1,22 +1,18 @@
 use super::{
     components::{
-        hitbox::ToHitbox, Bounce, Bullet, BulletBundle, CoinKind, Colorable, Componentable, Normal,
-        Player, Position, Rectangle, Solid, Velocity,
+        hitbox::{IntoHitbox, ToHitbox, ToHitboxMut},
+        Bounce, Bullet, BulletBundle, CoinKind, Colorable, Componentable, KillZone, Normal, Player,
+        Position, Rectangle, Solid, Velocity,
     },
     input::{Action, InputEvent, InputState},
     physics::{
         PLAYER_HORIZONTAL_ACCELERATION, PLAYER_MAX_HORIZONTAL_SPEED, PLAYER_MAX_VERTICAL_SPEED,
         PLAYER_VERTICAL_ACCELERATION,
     },
-    resources::Time,
+    resources::{Spawn, Time},
 };
-use crate::game::{
-    components::{
-        hitbox::{IntoHitbox, ToHitboxMut},
-        KillZone,
-    },
-    resources::Spawn,
-};
+use crate::game::components::hitbox::HitboxOwnedWithVelocity;
+use crate::game::components::{Hitbox, InfiniteArea};
 use bevy_ecs::{
     change_detection::Res,
     entity::Entity,
@@ -167,8 +163,12 @@ pub fn update_jump_time(mut query: Query<&mut Jump>, time: Res<Time>) {
 }
 
 pub fn player_enter_kill_zone(
-    mut player_query: Query<(&mut Position, &mut Rectangle), With<Player>>,
+    mut player_query: Query<(&mut Position, &Rectangle, &mut Velocity), With<Player>>,
     mut kill_zone_query: Query<(&Position, &Rectangle), (With<KillZone>, Without<Player>)>,
+    mut kill_zone_infinite_query: Query<
+        (&InfiniteArea),
+        (With<KillZone>, Without<Player>, Without<Rectangle>),
+    >,
     spawn: Res<Spawn>,
 ) {
     let mut player_hitbox = player_query.single_mut().into_hitbox();
@@ -177,6 +177,16 @@ pub fn player_enter_kill_zone(
         if player_hitbox.colides_with(&kill_zone_hitbox) {
             debug!("Player killed by KillZone");
             *player_hitbox.pos = spawn.0.clone();
+            *player_hitbox.velocity = Velocity::default();
+            break;
+        }
+    }
+
+    for infinite_area in kill_zone_infinite_query.iter() {
+        if infinite_area.collides_with(&player_hitbox) {
+            debug!("Player killed by InfiniteArea");
+            *player_hitbox.pos = spawn.0.clone();
+            *player_hitbox.velocity = Velocity::default();
             break;
         }
     }
