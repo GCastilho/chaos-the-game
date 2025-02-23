@@ -1,4 +1,11 @@
-use crate::game::components::{Position, Rectangle};
+use super::{
+    components::{
+        CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity,
+    },
+    physics::PLAYER_VERTICAL_ACCELERATION,
+    player::Jump,
+};
+use bevy_ecs::prelude::Commands;
 use sdl2::pixels::Color;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
@@ -59,4 +66,50 @@ pub enum Entity {
         color: ColorName,
         jump: Option<f64>,
     },
+}
+
+impl Entity {
+    pub fn spawn(self, commands: &mut Commands) {
+        match self {
+            Entity::Player { position } => {
+                commands.spawn((
+                    Player,
+                    position,
+                    Rectangle::new(50, 50),
+                    Color::BLUE.into_fill(),
+                    Velocity::default(),
+                    Solid::all(),
+                    Jump::default(),
+                    Gravitable,
+                ));
+            }
+            Entity::Static {
+                position,
+                rectangle,
+                color,
+            } => {
+                commands.spawn((
+                    position,
+                    rectangle,
+                    Color::from(color).into_fill(),
+                    Solid::all(),
+                ));
+            }
+            Entity::Coin {
+                position,
+                color,
+                jump,
+            } => {
+                let coin_kind = jump
+                    .map(|v| CoinKind::Jump((PLAYER_VERTICAL_ACCELERATION / v) as u32))
+                    .unwrap_or(CoinKind::Color(color.clone().into()));
+                commands.spawn((
+                    position,
+                    Rectangle::new(10, 10),
+                    Color::from(color).into_fill(),
+                    coin_kind,
+                ));
+            }
+        }
+    }
 }
