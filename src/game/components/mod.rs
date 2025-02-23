@@ -156,7 +156,7 @@ pub enum CoinKind {
 }
 
 #[derive(Debug, enum_map::Enum, Deserialize, PartialEq)]
-#[serde(rename = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Direction {
     Up,
     Down,

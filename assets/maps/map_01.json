@@ -30,6 +30,11 @@
     }
   },
   {
+    "entity": "kill_zone",
+    "start": 0,
+    "direction": "down"
+  },
+  {
     "entity": "coin",
     "position": {
       "x": 120,
