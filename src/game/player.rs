@@ -10,6 +10,13 @@ use super::{
     },
     resources::Time,
 };
+use crate::game::{
+    components::{
+        hitbox::{IntoHitbox, ToHitboxMut},
+        KillZone,
+    },
+    resources::Spawn,
+};
 use bevy_ecs::{
     change_detection::Res,
     entity::Entity,
@@ -18,6 +25,7 @@ use bevy_ecs::{
     query::{With, Without},
     system::Commands,
 };
+use log::{debug, info};
 use std::{
     cmp::Ordering::{Equal, Greater, Less},
     time::Duration,
@@ -154,6 +162,22 @@ pub fn update_jump_time(mut query: Query<&mut Jump>, time: Res<Time>) {
     for mut jump in query.iter_mut() {
         if let Some(v) = &mut jump.time_to_jump {
             *v = v.saturating_sub(time.delta());
+        }
+    }
+}
+
+pub fn player_enter_kill_zone(
+    mut player_query: Query<(&mut Position, &mut Rectangle), With<Player>>,
+    mut kill_zone_query: Query<(&Position, &Rectangle), (With<KillZone>, Without<Player>)>,
+    spawn: Res<Spawn>,
+) {
+    let mut player_hitbox = player_query.single_mut().into_hitbox();
+    for (position, rectangle) in kill_zone_query.iter() {
+        let kill_zone_hitbox = rectangle.on_position(position);
+        if player_hitbox.colides_with(&kill_zone_hitbox) {
+            debug!("Player killed by KillZone");
+            *player_hitbox.pos = spawn.0.clone();
+            break;
         }
     }
 }

@@ -102,7 +102,7 @@ impl<T: RectInPosition> Hitbox<T> {
 #[derive(Debug)]
 pub struct HitboxOwned<'a> {
     pub pos: Mut<'a, Position>,
-    pub rect: &'a Rectangle,
+    pub rect: Mut<'a, Rectangle>,
 }
 
 impl<'a> RectInPosition for HitboxOwned<'a> {
@@ -173,7 +173,7 @@ impl<'a> ToHitboxMut<'a> for (Mut<'a, Position>, &'a Rectangle) {
     }
 }
 
-impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, &'a Rectangle) {
+impl<'a> IntoHitbox<HitboxOwned<'a>> for (Mut<'a, Position>, Mut<'a, Rectangle>) {
     fn into_hitbox(self) -> Hitbox<HitboxOwned<'a>> {
         let (pos, rect) = self;
         Hitbox(HitboxOwned { pos, rect })

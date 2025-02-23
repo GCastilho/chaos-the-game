@@ -5,6 +5,7 @@ use super::{
     physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
+use crate::game::components::{KillZone, SolidSides};
 use bevy_ecs::prelude::Commands;
 use sdl2::pixels::Color;
 use serde::{Deserialize, Deserializer};
@@ -50,8 +51,21 @@ impl<'de> Deserialize<'de> for ColorName {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
-#[serde(tag = "entity", rename_all = "lowercase")]
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum KillZoneType {
+    Area {
+        position: Position,
+        rectangle: Rectangle,
+    },
+    Infinite {
+        start: f64,
+        direction: SolidSides,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "entity", rename_all = "snake_case")]
 pub enum Entity {
     Player {
         position: Position,
@@ -66,6 +80,7 @@ pub enum Entity {
         color: ColorName,
         jump: Option<f64>,
     },
+    KillZone(KillZoneType),
 }
 
 impl Entity {
@@ -110,6 +125,20 @@ impl Entity {
                     coin_kind,
                 ));
             }
+            Entity::KillZone(zone_type) => match zone_type {
+                KillZoneType::Area {
+                    position,
+                    rectangle,
+                } => {
+                    commands.spawn((
+                        KillZone,
+                        position,
+                        rectangle,
+                        Color::RGBA(255, 0, 0, 64).into_fill(),
+                    ));
+                }
+                KillZoneType::Infinite { .. } => todo!(),
+            },
         }
     }
 }

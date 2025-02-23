@@ -2,7 +2,8 @@ mod game;
 
 use crate::game::{
     camera::{move_camera, Camera},
-    resources::Time,
+    player::player_enter_kill_zone,
+    resources::{Spawn, Time},
 };
 use bevy_ecs::{
     event::Events,
@@ -25,6 +26,7 @@ use game::{
     Update,
 };
 use sdl2::{event::Event, keyboard::Keycode, pixels::Color, render::WindowCanvas};
+use simple_logger::SimpleLogger;
 use std::time::Duration;
 
 const SCREEN_WIDTH: u32 = 800;
@@ -40,6 +42,8 @@ fn main() -> Result<(), String> {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or_default();
+
+    SimpleLogger::new().init().expect("log init failed");
 
     let sdl_context = sdl2::init().expect("Could not init SDL");
     let video_subsystem = sdl_context
@@ -66,6 +70,7 @@ fn main() -> Result<(), String> {
     world.insert_resource(Time::new());
     insert_mouse_resources(&mut world);
     world.init_resource::<Camera>();
+    world.insert_resource(Spawn::new());
 
     Schedule::new(Startup)
         .add_systems(init_map_system)
@@ -90,6 +95,7 @@ fn main() -> Result<(), String> {
         .add_systems(player_collides_coin)
         .add_systems(update_jump_time)
         .add_systems((handle_mouse, insert_mouse_square))
+        .add_systems(player_enter_kill_zone)
         .add_systems(move_camera.after(handle_player_input));
 
     let mut render_scheduler = Schedule::new(Render);

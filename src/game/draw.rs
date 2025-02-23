@@ -6,7 +6,11 @@ use bevy_ecs::{
     schedule::ScheduleLabel,
     system::{NonSendMut, Query, ResMut},
 };
-use sdl2::{pixels::Color, rect::Rect, render::WindowCanvas};
+use sdl2::{
+    pixels::Color,
+    rect::Rect,
+    render::{BlendMode, WindowCanvas},
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, ScheduleLabel)]
 pub struct Render;
@@ -25,6 +29,7 @@ pub fn draw(
             rect.height,
         );
         canvas.set_draw_color(colorable.color);
+        canvas.set_blend_mode(BlendMode::Blend);
         match colorable.draw_type {
             ColorDrawType::Fill => canvas.fill_rect(square).expect("Can't fill rect"),
             ColorDrawType::Outline => canvas.draw_rect(square).expect("Can't draw rect"),

@@ -19,6 +19,17 @@
     "color": "green"
   },
   {
+    "entity": "kill_zone",
+    "position": {
+      "x": -100,
+      "y": -2025
+    },
+    "rectangle": {
+      "width": 2000,
+      "height": 2100
+    }
+  },
+  {
     "entity": "coin",
     "position": {
       "x": 120,

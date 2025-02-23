@@ -155,7 +155,8 @@ pub enum CoinKind {
     Jump(u32),
 }
 
-#[derive(Debug, enum_map::Enum)]
+#[derive(Debug, enum_map::Enum, Deserialize)]
+#[serde(rename = "lowercase")]
 pub enum SolidSides {
     Up,
     Down,
@@ -193,3 +194,6 @@ impl Solid {
         self.sides.iter().any(|(_, s)| *s)
     }
 }
+
+#[derive(Debug, Component)]
+pub struct KillZone;
