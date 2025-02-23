@@ -4,12 +4,7 @@
     "position": {
       "x": 250,
       "y": 600
-    },
-    "rectangle": {
-      "width": 50,
-      "height": 50
-    },
-    "color": "blue"
+    }
   },
   {
     "entity": "static",
@@ -29,10 +24,6 @@
       "x": 120,
       "y": 115
     },
-    "rectangle": {
-      "width": 10,
-      "height": 10
-    },
     "color": "magenta"
   },
   {
@@ -41,10 +32,6 @@
       "x": 470,
       "y": 115
     },
-    "rectangle": {
-      "width": 10,
-      "height": 10
-    },
     "color": "red"
   },
   {
@@ -52,10 +39,6 @@
     "position": {
       "x": 300,
       "y": 115
-    },
-    "rectangle": {
-      "width": 10,
-      "height": 10
     },
     "color": "cyan",
     "jump": 3.0

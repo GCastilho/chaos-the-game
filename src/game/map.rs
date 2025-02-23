@@ -1,7 +1,7 @@
 use crate::game::components::{Position, Rectangle};
 use sdl2::pixels::Color;
 use serde::{Deserialize, Deserializer};
-use std::{ops::Deref, str::FromStr};
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ColorName(Color);
@@ -48,8 +48,6 @@ impl<'de> Deserialize<'de> for ColorName {
 pub enum Entity {
     Player {
         position: Position,
-        rectangle: Rectangle,
-        color: ColorName,
     },
     Static {
         position: Position,
@@ -58,66 +56,7 @@ pub enum Entity {
     },
     Coin {
         position: Position,
-        rectangle: Rectangle,
         color: ColorName,
         jump: Option<f64>,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const MAP_JSON: &str = "[{\"entity\":\"player\",\"position\":{\"x\":250,\"y\":600},\"rectangle\":{\"width\":50,\"height\":50},\"color\":\"blue\"},{\"entity\":\"static\",\"position\":{\"x\":250,\"y\":600},\"rectangle\":{\"width\":50,\"height\":50},\"color\":\"green\"},{\"entity\":\"coin\",\"position\":{\"x\":120,\"y\":115},\"rectangle\":{\"width\":10,\"height\":10},\"color\":\"magenta\"},{\"entity\":\"coin\",\"position\":{\"x\":470,\"y\":115},\"rectangle\":{\"width\":10,\"height\":10},\"color\":\"red\"},{\"entity\":\"coin\",\"position\":{\"x\":300,\"y\":115},\"rectangle\":{\"width\":10,\"height\":10},\"color\":\"cyan\",\"jump\":3}]";
-
-    #[test]
-    fn test_parse_map() {
-        let expected = vec![
-            Entity::Player {
-                position: Position { x: 250.0, y: 600.0 },
-                rectangle: Rectangle {
-                    width: 50,
-                    height: 50,
-                },
-                color: ColorName(Color::BLUE),
-            },
-            Entity::Static {
-                position: Position { x: 250.0, y: 600.0 },
-                rectangle: Rectangle {
-                    width: 50,
-                    height: 50,
-                },
-                color: ColorName(Color::GREEN),
-            },
-            Entity::Coin {
-                position: Position { x: 120.0, y: 115.0 },
-                rectangle: Rectangle {
-                    width: 10,
-                    height: 10,
-                },
-                color: ColorName(Color::MAGENTA),
-                jump: None,
-            },
-            Entity::Coin {
-                position: Position { x: 470.0, y: 115.0 },
-                rectangle: Rectangle {
-                    width: 10,
-                    height: 10,
-                },
-                color: ColorName(Color::RED),
-                jump: None,
-            },
-            Entity::Coin {
-                position: Position { x: 300.0, y: 115.0 },
-                rectangle: Rectangle {
-                    width: 10,
-                    height: 10,
-                },
-                color: ColorName(Color::CYAN),
-                jump: Some(3.0),
-            },
-        ];
-        let entities = serde_json::from_str::<Vec<Entity>>(MAP_JSON).expect("parse failed");
-        assert_eq!(expected, entities);
-    }
 }

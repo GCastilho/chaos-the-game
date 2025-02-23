@@ -4,6 +4,7 @@ use super::{
     physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
+use crate::game::components::Rectangle;
 use bevy_ecs::{schedule::ScheduleLabel, system::Commands};
 use sdl2::pixels::Color;
 use std::fs;
@@ -18,11 +19,7 @@ pub fn init_map_system(mut commands: Commands) {
     let mut found_player = false;
     for entity in entities {
         match entity {
-            Entity::Player {
-                position,
-                rectangle,
-                color,
-            } => {
+            Entity::Player { position } => {
                 if found_player {
                     panic!("Map defined more than one player");
                 }
@@ -30,8 +27,8 @@ pub fn init_map_system(mut commands: Commands) {
                 commands.spawn((
                     Player,
                     position,
-                    rectangle,
-                    Color::from(color).into_fill(),
+                    Rectangle::new(50, 50),
+                    Color::BLUE.into_fill(),
                     Velocity::default(),
                     Solid::all(),
                     Jump::default(),
@@ -52,7 +49,6 @@ pub fn init_map_system(mut commands: Commands) {
             }
             Entity::Coin {
                 position,
-                rectangle,
                 color,
                 jump,
             } => {
@@ -61,7 +57,7 @@ pub fn init_map_system(mut commands: Commands) {
                     .unwrap_or(CoinKind::Color(color.clone().into()));
                 commands.spawn((
                     position,
-                    rectangle,
+                    Rectangle::new(10, 10),
                     Color::from(color).into_fill(),
                     coin_kind,
                 ));
