@@ -1,11 +1,11 @@
 use super::{
     components::{
-        CoinKind, Componentable, Gravitable, Player, Position, Rectangle, Solid, Velocity,
+        CoinKind, Componentable, Direction, Gravitable, InfiniteArea, KillZone, Player, Position,
+        Rectangle, Solid, Velocity,
     },
     physics::PLAYER_VERTICAL_ACCELERATION,
     player::Jump,
 };
-use crate::game::components::{Direction, InfiniteArea, KillZone};
 use bevy_ecs::prelude::Commands;
 use sdl2::pixels::Color;
 use serde::{Deserialize, Deserializer};

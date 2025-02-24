@@ -1,6 +1,7 @@
 use crate::game::components::Position;
 use bevy_ecs::system::Resource;
 use std::{
+    cmp,
     ops::Deref,
     time::{Duration, Instant},
 };
@@ -31,10 +32,13 @@ impl Time {
 
     pub fn update(&mut self) {
         let now = Instant::now();
-        self.delta = now - self.last_update;
+        self.delta = cmp::min(now - self.last_update, Self::MAX_DELTA);
         self.elapsed += self.delta;
         self.last_update = now;
     }
+
+    // TODO: Talvez o máximo deveria ser 100. Coloquei 50 pq com 100 ainda atravessava o chão
+    const MAX_DELTA: Duration = Duration::from_millis(50);
 }
 
 #[derive(Debug, Resource, Clone)]
