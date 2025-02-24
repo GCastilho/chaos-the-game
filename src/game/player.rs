@@ -11,8 +11,10 @@ use super::{
     },
     resources::{Spawn, Time},
 };
+use crate::game::camera::Camera;
 use crate::game::components::hitbox::HitboxOwnedWithVelocity;
 use crate::game::components::{Hitbox, InfiniteArea};
+use bevy_ecs::system::ResMut;
 use bevy_ecs::{
     change_detection::Res,
     entity::Entity,
@@ -170,6 +172,7 @@ pub fn player_enter_kill_zone(
         (With<KillZone>, Without<Player>, Without<Rectangle>),
     >,
     spawn: Res<Spawn>,
+    mut camera: ResMut<Camera>,
 ) {
     let mut player_hitbox = player_query.single_mut().into_hitbox();
     for (position, rectangle) in kill_zone_query.iter() {
@@ -178,6 +181,7 @@ pub fn player_enter_kill_zone(
             debug!("Player killed by KillZone");
             *player_hitbox.pos = spawn.0.clone();
             *player_hitbox.velocity = Velocity::default();
+            camera.pos = Position::new(0, 0);
             break;
         }
     }
@@ -187,6 +191,7 @@ pub fn player_enter_kill_zone(
             debug!("Player killed by InfiniteArea");
             *player_hitbox.pos = spawn.0.clone();
             *player_hitbox.velocity = Velocity::default();
+            camera.pos = Position::new(0, 0);
             break;
         }
     }
