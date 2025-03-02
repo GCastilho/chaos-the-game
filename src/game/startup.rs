@@ -14,7 +14,7 @@ pub fn init_map_system(mut commands: Commands, mut spawn: ResMut<Spawn>) {
     let entities = serde_json::from_str::<Vec<Entity>>(&map_file).expect("Failed to parse map");
     match entities
         .iter()
-        .fold(0, |acc, e| acc + matches!(e, Entity::Player { .. }) as i32)
+        .fold(0, |acc, e| acc + matches!(e, Entity::Player { .. }) as u32)
     {
         0 => panic!("Map defined no player"),
         2.. => panic!("Map defined more than one player"),

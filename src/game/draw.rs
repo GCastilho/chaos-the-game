@@ -7,7 +7,6 @@ use bevy_ecs::{
     system::{NonSendMut, Query, ResMut},
 };
 use sdl2::{
-    pixels::Color,
     rect::Rect,
     render::{BlendMode, WindowCanvas},
 };
@@ -35,15 +34,4 @@ pub fn draw(
             ColorDrawType::Outline => canvas.draw_rect(square).expect("Can't draw rect"),
         };
     }
-
-    // TODO: Draw do hitbox da câmera deveria ser feito no for normal (só desenha se tem cor)
-    let square = Rect::new(
-        camera.pos.x as i32 - camera.hitbox().left() as i32,
-        canvas.window().size().1 as i32 - camera.pos.y.round() as i32 - camera.rect.height as i32
-            + camera.hitbox().bottom() as i32,
-        camera.rect.width,
-        camera.rect.height,
-    );
-    canvas.set_draw_color(Color::GREEN);
-    canvas.draw_rect(square).expect("Can't draw rect");
 }

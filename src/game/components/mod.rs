@@ -149,6 +149,12 @@ pub struct Colorable {
     pub draw_type: ColorDrawType,
 }
 
+impl Colorable {
+    pub fn new(color: Color, draw_type: ColorDrawType) -> Self {
+        Self { color, draw_type }
+    }
+}
+
 #[derive(Debug, Component)]
 pub enum CoinKind {
     Color(Color),
