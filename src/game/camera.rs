@@ -35,10 +35,10 @@ impl FromWorld for Camera {
         world.spawn((
             CameraHitbox,
             Margin {
-                top: 10.0,
+                top: (h / 3) as f64,
                 right: (w / 2) as f64,
-                bottom: 0.0,
-                left: 10.0,
+                bottom: 60.0,
+                left: 30.0,
             }
             .into_bundle((w, h)),
             Colorable::new(Color::GREEN, ColorDrawType::Outline),
